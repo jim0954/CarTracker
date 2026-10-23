@@ -1,30 +1,38 @@
-// --- 分頁切換 ---
+// --- 分頁切換（上方分頁列與手機底部導覽列共用）---
 import * as store from '../store.js';
 import { renderStatsTab } from '../render/stats.js';
 
+const TABS = ['maintenance', 'records', 'fuel', 'stats'];
+
+function activateTab(name) {
+  TABS.forEach(t => {
+    const active = t === name;
+    document.getElementById(`tab-content-${t}`).classList.toggle('hidden', !active);
+
+    const btn = document.getElementById(`tab-btn-${t}`);
+    btn.classList.toggle('bg-emerald-500/20', active);
+    btn.classList.toggle('text-emerald-400', active);
+    btn.classList.toggle('border-emerald-500/40', active);
+    btn.classList.toggle('text-slate-400', !active);
+    btn.classList.toggle('border-transparent', !active);
+
+    const mobileBtn = document.querySelector(`.mobile-tab[data-tab="${t}"]`);
+    mobileBtn.classList.toggle('text-emerald-400', active);
+    mobileBtn.classList.toggle('text-slate-400', !active);
+  });
+
+  // 切到統計分頁時重畫圖表
+  if (name === 'stats') {
+    renderStatsTab(store.getCurrentVehicle());
+  }
+  window.scrollTo({ top: 0 });
+}
+
 export function initTabs() {
-  const tabButtons = [
-    { btn: document.getElementById('tab-btn-maintenance'), pane: document.getElementById('tab-content-maintenance') },
-    { btn: document.getElementById('tab-btn-records'), pane: document.getElementById('tab-content-records') },
-    { btn: document.getElementById('tab-btn-fuel'), pane: document.getElementById('tab-content-fuel') },
-    { btn: document.getElementById('tab-btn-stats'), pane: document.getElementById('tab-content-stats') }
-  ];
-
-  tabButtons.forEach(tab => {
-    tab.btn.addEventListener('click', () => {
-      tabButtons.forEach(t => {
-        t.pane.classList.add('hidden');
-        t.btn.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/40');
-        t.btn.classList.add('text-slate-400', 'border-transparent');
-      });
-      tab.pane.classList.remove('hidden');
-      tab.btn.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/40');
-      tab.btn.classList.remove('text-slate-400', 'border-transparent');
-
-      // 切到統計分頁時重畫圖表
-      if (tab.pane.id === 'tab-content-stats') {
-        renderStatsTab(store.getCurrentVehicle());
-      }
-    });
+  TABS.forEach(t => {
+    document.getElementById(`tab-btn-${t}`).addEventListener('click', () => activateTab(t));
+  });
+  document.querySelectorAll('.mobile-tab').forEach(btn => {
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
 }

@@ -118,8 +118,8 @@ export function initRecordActions() {
     });
   });
 
-  document.getElementById('btn-open-record-modal').addEventListener('click', () => {
-    openRecordModalForType('maintenance');
+  ['btn-open-record-modal', 'btn-fab-record'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => openRecordModalForType('maintenance'));
   });
 
   document.getElementById('btn-quick-fuel').addEventListener('click', () => {

@@ -146,11 +146,9 @@ export function renderMaintenanceTab(vehicle) {
 
   // Update Alert Badges
   document.getElementById('hero-alert-count').textContent = alertCount;
-  const tabAlertBadge = document.getElementById('badge-tab-alert');
-  tabAlertBadge.textContent = alertCount;
-  if (alertCount === 0) {
-    tabAlertBadge.classList.add('hidden');
-  } else {
-    tabAlertBadge.classList.remove('hidden');
-  }
+  ['badge-tab-alert', 'badge-tab-alert-mobile'].forEach(id => {
+    const badge = document.getElementById(id);
+    badge.textContent = alertCount;
+    badge.classList.toggle('hidden', alertCount === 0);
+  });
 }

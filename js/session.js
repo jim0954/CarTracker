@@ -26,15 +26,32 @@ export function hideLoading() {
 }
 
 function showUser(user) {
+  // 沒有大頭貼時顯示名字的第一個字
   $('user-avatar').src = user.picture || '';
-  $('user-avatar').classList.toggle('invisible', !user.picture);
+  $('user-avatar').classList.toggle('hidden', !user.picture);
+  $('user-initial').textContent = (user.name || user.email || '?').trim().charAt(0).toUpperCase();
+  $('user-initial').classList.toggle('hidden', !!user.picture);
   $('user-name').textContent = user.name;
-  $('user-chip').title = user.email;
+  $('user-menu-name').textContent = user.name;
+  $('user-menu-email').textContent = user.email;
   $('user-chip').classList.remove('hidden');
+}
+
+// 頭像選單：點頭像開關，點其他地方關閉
+function initUserMenu() {
+  $('btn-user-menu').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('user-menu').classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!$('user-menu').contains(e.target)) $('user-menu').classList.add('hidden');
+  });
 }
 
 // 登入成功（含之後重新登入）時呼叫 onLoggedIn(user)
 export async function startSession(onLoggedIn) {
+  initUserMenu();
+
   // 登出時一併清除本機的雲端資料快取（共用裝置時保護隱私）
   $('btn-sign-out').addEventListener('click', () => {
     signOut();

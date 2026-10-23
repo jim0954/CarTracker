@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>愛車99 Pro - 車輛保養里程與用車管家</title>
+  <title>CarTracker - 汽機車保養紀錄</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <!-- FontAwesome -->
@@ -79,7 +79,7 @@
           <i class="fa-solid fa-gauge-high text-lg"></i>
         </div>
         <div>
-          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">愛車99 <span class="text-xs uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Pro</span></span>
+          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">CarTracker</span>
           <p class="text-[11px] text-slate-400 leading-none">智慧用車與保養提醒系統</p>
         </div>
       </div>
@@ -792,7 +792,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
       <div class="flex items-center gap-2">
         <i class="fa-solid fa-shield-halved text-emerald-400"></i>
-        <span>愛車99 Pro • 純前端單頁應用 (免伺服器，資料儲存於瀏覽器 LocalStorage)</span>
+        <span>CarTracker • 汽機車保養紀錄</span>
       </div>
       <div>
         <span>支援手機加入主畫面 (PWA) 隨開隨用</span>
@@ -803,7 +803,8 @@
   <!-- ==================== APPLICATION LOGIC ==================== -->
   <script>
     // --- 預設示範資料 ---
-    const DEFAULT_STORAGE_KEY = 'autocare99_pro_db_v1';
+    const DEFAULT_STORAGE_KEY = 'cartracker_db_v1';
+    const LEGACY_STORAGE_KEY = 'autocare99_pro_db_v1';
 
     const INITIAL_STATE = {
       currentVehicleId: 'v1',
@@ -865,6 +866,12 @@
 
     function loadState() {
       try {
+        // 搬移舊版儲存鍵的資料
+        const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacy && !localStorage.getItem(DEFAULT_STORAGE_KEY)) {
+          localStorage.setItem(DEFAULT_STORAGE_KEY, legacy);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
         const json = localStorage.getItem(DEFAULT_STORAGE_KEY);
         if (json) {
           appState = JSON.parse(json);
@@ -1896,7 +1903,7 @@
       const downloadAnchor = document.createElement('a');
       const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
       downloadAnchor.setAttribute('href', dataStr);
-      downloadAnchor.setAttribute('download', `autocare99_backup_${dateStr}.json`);
+      downloadAnchor.setAttribute('download', `cartracker_backup_${dateStr}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -1952,7 +1959,7 @@
             renderApp();
             showToast('備份資料已成功還原！');
           } else {
-            showToast('檔案格式不符合愛車99備份規範', 'error');
+            showToast('檔案格式不符合 CarTracker 備份規範', 'error');
           }
         } catch (err) {
           showToast('無法解析此 JSON 檔案', 'error');

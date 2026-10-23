@@ -10,6 +10,17 @@ export function formatDate(dateStr) {
   return dateStr;
 }
 
+// 將使用者輸入的文字轉義後才能放進 innerHTML，避免 XSS
+export function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
@@ -28,7 +39,8 @@ export function showToast(message, type = 'success') {
                type === 'error' ? 'fa-circle-exclamation text-rose-400' :
                'fa-circle-info text-sky-400';
 
-  toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i><span>${message}</span>`;
+  toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i><span></span>`;
+  toast.querySelector('span').textContent = message;
   container.appendChild(toast);
 
   requestAnimationFrame(() => {

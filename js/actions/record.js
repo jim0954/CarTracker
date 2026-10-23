@@ -1,6 +1,6 @@
 // --- 用車紀錄：記一筆 / 編輯 / 刪除 ---
 import * as store from '../store.js';
-import { showToast, openModal, closeModal, openConfirmModal, todayStr } from '../utils.js';
+import { showToast, openModal, closeModal, openConfirmModal, todayStr, escapeHtml } from '../utils.js';
 import { renderApp } from '../render/app.js';
 import { renderRecordsTab } from '../render/records.js';
 
@@ -19,8 +19,8 @@ function populateRecordMaintenanceCheckboxes(vehicle, selectedIds = []) {
     lbl.className = 'flex items-center gap-2 p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 cursor-pointer transition';
     const isChecked = selectedIds.includes(it.id);
     lbl.innerHTML = `
-      <input type="checkbox" name="maint-item-check" value="${it.id}" ${isChecked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 bg-slate-900 border-slate-700">
-      <span class="truncate">${it.name}</span>
+      <input type="checkbox" name="maint-item-check" value="${escapeHtml(it.id)}" ${isChecked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 bg-slate-900 border-slate-700">
+      <span class="truncate">${escapeHtml(it.name)}</span>
     `;
     container.appendChild(lbl);
   });

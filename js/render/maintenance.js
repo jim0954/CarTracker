@@ -1,6 +1,6 @@
 // --- 分頁 1：保養項目 ---
 import * as store from '../store.js';
-import { formatNumber } from '../utils.js';
+import { formatNumber, escapeHtml } from '../utils.js';
 
 export function renderMaintenanceTab(vehicle) {
   const container = document.getElementById('maintenance-items-grid');
@@ -62,8 +62,8 @@ export function renderMaintenanceTab(vehicle) {
       <div>
         <div class="flex items-start justify-between gap-2 mb-3">
           <div>
-            <h4 class="text-base font-bold text-white tracking-tight">${item.name}</h4>
-            <p class="text-xs text-slate-400 mt-0.5">${item.notes || '一般定期更換'}</p>
+            <h4 class="text-base font-bold text-white tracking-tight">${escapeHtml(item.name)}</h4>
+            <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(item.notes) || '一般定期更換'}</p>
           </div>
           ${badgeHtml}
         </div>
@@ -84,12 +84,12 @@ export function renderMaintenanceTab(vehicle) {
           <div>
             <span class="text-slate-500 block">上次更換里程</span>
             <span class="font-mono text-slate-300 font-semibold">${formatNumber(item.lastKm)} km</span>
-            <span class="text-[10px] text-slate-500 block">${item.lastDate || '未填'}</span>
+            <span class="text-[10px] text-slate-500 block">${escapeHtml(item.lastDate) || '未填'}</span>
           </div>
           <div>
             <span class="text-slate-500 block">建議保養里程</span>
             <span class="font-mono text-slate-300 font-semibold">${formatNumber(nextMileage)} km</span>
-            <span class="text-[10px] text-slate-500 block">每 ${formatNumber(item.intervalKm)} km / ${item.intervalMonths}月</span>
+            <span class="text-[10px] text-slate-500 block">每 ${formatNumber(item.intervalKm)} km / ${escapeHtml(item.intervalMonths)}月</span>
           </div>
         </div>
       </div>
@@ -97,15 +97,15 @@ export function renderMaintenanceTab(vehicle) {
       <!-- Card Actions -->
       <div class="flex items-center justify-between gap-2 mt-5 pt-4 border-t border-slate-800">
         <div class="flex gap-2">
-          <button data-action="edit-item" data-id="${item.id}" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition">
+          <button data-action="edit-item" data-id="${escapeHtml(item.id)}" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition">
             <i class="fa-solid fa-gear mr-1"></i>設定
           </button>
-          <button data-action="delete-item" data-id="${item.id}" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="刪除項目">
+          <button data-action="delete-item" data-id="${escapeHtml(item.id)}" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="刪除項目">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         </div>
 
-        <button data-action="complete-item" data-id="${item.id}" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">
+        <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">
           <i class="fa-solid fa-check-double"></i> 記錄更換
         </button>
       </div>

@@ -1,6 +1,6 @@
 // --- 分頁 2：用車紀錄 ---
 import * as store from '../store.js';
-import { formatNumber, formatDate } from '../utils.js';
+import { formatNumber, formatDate, escapeHtml } from '../utils.js';
 
 export function renderRecordsTab(vehicle) {
   const tbody = document.getElementById('records-table-body');
@@ -52,26 +52,26 @@ export function renderRecordsTab(vehicle) {
 
     let detailExtra = '';
     if (r.type === 'fuel' && r.details && r.details.liters) {
-      detailExtra = `<span class="text-[10px] text-sky-400 block">${r.details.liters} L @ $${r.details.pricePerLiter || ''}</span>`;
+      detailExtra = `<span class="text-[10px] text-sky-400 block">${escapeHtml(r.details.liters)} L @ $${escapeHtml(r.details.pricePerLiter)}</span>`;
     }
 
     tr.innerHTML = `
-      <td class="py-3 px-4 font-mono text-xs text-slate-300">${formatDate(r.date)}</td>
+      <td class="py-3 px-4 font-mono text-xs text-slate-300">${escapeHtml(formatDate(r.date))}</td>
       <td class="py-3 px-4">${badgeType}</td>
       <td class="py-3 px-4 font-mono text-slate-200">${formatNumber(r.mileage)}</td>
       <td class="py-3 px-4">
-        <span class="font-medium text-white block">${r.title}</span>
+        <span class="font-medium text-white block">${escapeHtml(r.title)}</span>
         ${detailExtra}
       </td>
       <td class="py-3 px-4 text-right font-mono font-bold text-slate-200">NT$ ${formatNumber(r.amount)}</td>
       <td class="py-3 px-4 text-xs text-slate-400">
-        <span class="text-slate-300 block">${r.vendor || '-'}</span>
-        <span class="text-[11px] text-slate-500">${r.notes || ''}</span>
+        <span class="text-slate-300 block">${escapeHtml(r.vendor) || '-'}</span>
+        <span class="text-[11px] text-slate-500">${escapeHtml(r.notes)}</span>
       </td>
       <td class="py-3 px-4 text-center">
         <div class="flex items-center justify-center gap-2">
-          <button data-action="edit-record" data-id="${r.id}" class="text-slate-400 hover:text-white p-1 rounded" title="編輯"><i class="fa-solid fa-pen"></i></button>
-          <button data-action="delete-record" data-id="${r.id}" class="text-slate-500 hover:text-rose-400 p-1 rounded" title="刪除"><i class="fa-solid fa-trash-can"></i></button>
+          <button data-action="edit-record" data-id="${escapeHtml(r.id)}" class="text-slate-400 hover:text-white p-1 rounded" title="編輯"><i class="fa-solid fa-pen"></i></button>
+          <button data-action="delete-record" data-id="${escapeHtml(r.id)}" class="text-slate-500 hover:text-rose-400 p-1 rounded" title="刪除"><i class="fa-solid fa-trash-can"></i></button>
         </div>
       </td>
     `;

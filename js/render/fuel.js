@@ -1,6 +1,6 @@
 // --- 分頁 3：加油與油耗 ---
 import * as store from '../store.js';
-import { formatNumber, formatDate } from '../utils.js';
+import { formatNumber, formatDate, escapeHtml } from '../utils.js';
 
 export function renderFuelTab(vehicle) {
   const fuelRecords = store.getRecords(vehicle.id)
@@ -71,14 +71,14 @@ export function renderFuelTab(vehicle) {
       : '<span class="text-slate-600 text-xs">-</span>';
 
     tr.innerHTML = `
-      <td class="py-3 px-4 font-mono text-xs text-slate-300">${formatDate(r.date)}</td>
+      <td class="py-3 px-4 font-mono text-xs text-slate-300">${escapeHtml(formatDate(r.date))}</td>
       <td class="py-3 px-4 font-mono text-slate-200">${formatNumber(r.mileage)}</td>
       <td class="py-3 px-4 font-mono text-xs text-slate-400">${distStr}</td>
       <td class="py-3 px-4 font-mono text-slate-200">${liters}</td>
-      <td class="py-3 px-4 font-mono text-xs text-slate-400">${price}</td>
+      <td class="py-3 px-4 font-mono text-xs text-slate-400">${escapeHtml(price)}</td>
       <td class="py-3 px-4 text-right font-mono font-bold text-slate-200">NT$ ${formatNumber(r.amount)}</td>
       <td class="py-3 px-4 text-center">${kmlBadge}</td>
-      <td class="py-3 px-4 text-xs text-slate-400">${r.vendor || ''} ${r.notes ? '(' + r.notes + ')' : ''}</td>
+      <td class="py-3 px-4 text-xs text-slate-400">${escapeHtml(r.vendor)} ${r.notes ? '(' + escapeHtml(r.notes) + ')' : ''}</td>
     `;
     tbody.appendChild(tr);
   });

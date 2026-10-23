@@ -211,8 +211,9 @@ function svcDeleteRecord_(email, recordId) {
 }
 
 // --- 匯入（本機資料搬到雲端）---
-// 會先刪除登入者在雲端的所有資料，再寫入；ID 全部重新產生
-function svcImportAll_(email, data) {
+// 預設先刪除登入者在雲端的所有資料再寫入；append 為 true 時保留既有資料、合併新增
+// ID 全部重新產生
+function svcImportAll_(email, data, append) {
   return withLock_(() => {
     const now = new Date();
     const vehicleIdMap = {};
@@ -240,8 +241,10 @@ function svcImportAll_(email, data) {
     });
 
     [['records', recordRows], ['items', itemRows], ['vehicles', vehicleRows]].forEach(([key, rows]) => {
-      const table = readTable_(key);
-      deleteRows_(table, table.rows.filter(r => r.owner === email).map(r => r._row));
+      if (!append) {
+        const table = readTable_(key);
+        deleteRows_(table, table.rows.filter(r => r.owner === email).map(r => r._row));
+      }
       appendRows_(readTable_(key), rows);
     });
     vehicleRows.forEach(v => refreshDueDates_(email, v.id));

@@ -3,7 +3,7 @@ import * as store from './store.js';
 import { isCloudMode } from './config.js';
 import { AUTH_ERROR_CODES } from './api.js';
 import { startSession, showLogin, showLoading, hideLoading } from './session.js';
-import { initModals, showToast } from './utils.js';
+import { initModals, showToast, openConfirmModal } from './utils.js';
 import { renderApp } from './render/app.js';
 import { initTabs } from './actions/tabs.js';
 import { initVehicleActions } from './actions/vehicle.js';
@@ -54,12 +54,33 @@ function updateSyncIndicator({ pending, error }) {
   }
 }
 
+// 這台裝置還有啟用雲端前的本機資料時，詢問是否上傳
+function offerLocalUpload() {
+  const local = store.getPendingLocalData();
+  if (!local) return;
+  const message = `這台裝置上有啟用雲端前的本機資料（${local.vehicles.length} 台車、${local.records.length} 筆紀錄），要合併上傳到你的雲端帳號嗎？`
+    + '\n\n選「取消」之後不再詢問，仍可在「資料備份」用匯入功能上傳。';
+  openConfirmModal('上傳本機資料', message, async () => {
+    showLoading('上傳本機資料中…');
+    try {
+      const result = await store.uploadLocalData(local);
+      showToast(`已上傳 ${result.vehicles} 台車、${result.records} 筆紀錄`);
+    } catch (err) {
+      handleCloudError(err);
+    } finally {
+      hideLoading();
+    }
+  }, () => store.dismissLocalUpload());
+}
+
 async function loadCloudData(user) {
   // 有快取先顯示，再背景更新
   if (store.loadCloudCache(user.email)) renderApp();
   else showLoading('從雲端載入資料…');
   try {
     await store.reloadFromCloud();
+    hideLoading();
+    offerLocalUpload();
   } catch (err) {
     handleCloudError(err);
   } finally {

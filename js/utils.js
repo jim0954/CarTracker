@@ -55,17 +55,20 @@ export function showToast(message, type = 'success') {
 
 // --- 確認視窗 ---
 let confirmCallback = null;
+let cancelCallback = null;
 
-export function openConfirmModal(title, message, onConfirm) {
+export function openConfirmModal(title, message, onConfirm, onCancel = null) {
   document.getElementById('confirm-modal-title').textContent = title;
   document.getElementById('confirm-modal-message').textContent = message;
   confirmCallback = onConfirm;
+  cancelCallback = onCancel;
   document.getElementById('confirm-modal').classList.remove('hidden');
 }
 
 function closeConfirmModal() {
   document.getElementById('confirm-modal').classList.add('hidden');
   confirmCallback = null;
+  cancelCallback = null;
 }
 
 // --- 一般 Modal ---
@@ -78,7 +81,10 @@ export function closeModal(modalId) {
 }
 
 export function initModals() {
-  document.getElementById('confirm-modal-cancel').addEventListener('click', closeConfirmModal);
+  document.getElementById('confirm-modal-cancel').addEventListener('click', () => {
+    if (cancelCallback) cancelCallback();
+    closeConfirmModal();
+  });
   document.getElementById('confirm-modal-ok').addEventListener('click', () => {
     if (confirmCallback) confirmCallback();
     closeConfirmModal();

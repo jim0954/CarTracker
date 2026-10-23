@@ -328,3 +328,36 @@ export async function importData(data) {
 export function resetToSample() {
   return importData(cloneInitialState());
 }
+
+// --- 本機模式資料上傳到雲端 ---
+const LOCAL_UPLOADED_KEY = 'cartracker_db_v1_uploaded';
+const LOCAL_UPLOAD_DISMISSED_KEY = 'cartracker_local_upload_dismissed';
+
+// 尚未上傳、也沒有被略過的本機模式資料；沒有則回傳 null
+export function getPendingLocalData() {
+  try {
+    if (localStorage.getItem(LOCAL_UPLOAD_DISMISSED_KEY)) return null;
+  } catch (e) {
+    return null;
+  }
+  const data = readStorage(LOCAL_STORAGE_KEY);
+  return data && data.vehicles && data.vehicles.length > 0 ? data : null;
+}
+
+export function dismissLocalUpload() {
+  try {
+    localStorage.setItem(LOCAL_UPLOAD_DISMISSED_KEY, '1');
+  } catch (e) { /* 忽略 */ }
+}
+
+// 合併上傳（不刪除雲端既有資料），成功後本機資料改名保留一份備份，避免重複上傳
+export async function uploadLocalData(data) {
+  await syncQueue;
+  const result = await api.call('importAll', { data: migrate(data), append: true });
+  try {
+    localStorage.setItem(LOCAL_UPLOADED_KEY, localStorage.getItem(LOCAL_STORAGE_KEY));
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  } catch (e) { /* 忽略 */ }
+  await reloadFromCloud();
+  return result;
+}

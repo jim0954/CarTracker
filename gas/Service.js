@@ -88,7 +88,8 @@ function svcSaveVehicle_(email, data) {
       const row = findOwned_(table, email, data.id);
       const changes = { ...pick_(data, VEHICLE_FIELDS), updatedAt: now };
       updateRow_(table, row._row, changes);
-      return vehicleToClient_({ ...row, ...changes });
+      // 里程變動會影響到期日推算
+      return { vehicle: vehicleToClient_({ ...row, ...changes }), items: refreshDueDates_(email, data.id) };
     }
     const row = {
       ...pick_(data, VEHICLE_FIELDS),
@@ -97,7 +98,7 @@ function svcSaveVehicle_(email, data) {
       createdAt: now, updatedAt: now
     };
     appendRows_(table, [row]);
-    return vehicleToClient_(row);
+    return { vehicle: vehicleToClient_(row), items: [] };
   });
 }
 
@@ -124,12 +125,12 @@ function svcSaveItem_(email, data) {
       const row = findOwned_(table, email, data.id);
       const changes = { ...pick_(data, ITEM_FIELDS), updatedAt: now };
       updateRow_(table, row._row, changes);
-      return itemToClient_({ ...row, ...changes });
+      return { item: refreshDueDates_(email, row.vehicleId).find(it => it.id === row.id) };
     }
     findOwned_(readTable_('vehicles'), email, data.vehicleId);
     const row = { ...pick_(data, ITEM_FIELDS), id: newId_('item'), owner: email, vehicleId: data.vehicleId, updatedAt: now };
     appendRows_(table, [row]);
-    return itemToClient_(row);
+    return { item: refreshDueDates_(email, data.vehicleId).find(it => it.id === row.id) };
   });
 }
 
@@ -154,7 +155,7 @@ function svcSaveRecord_(email, data) {
       const row = findOwned_(records, email, data.id);
       const changes = { ...recordFromClient_(data), updatedAt: now };
       updateRow_(records, row._row, changes);
-      return { record: recordToClient_({ ...row, ...changes }) };
+      return { record: recordToClient_({ ...row, ...changes }), items: refreshDueDates_(email, row.vehicleId) };
     }
 
     const vehicles = readTable_('vehicles');
@@ -173,16 +174,14 @@ function svcSaveRecord_(email, data) {
     }
 
     const items = readTable_('items');
-    const changedItems = [];
     row.itemIds.forEach(itemId => {
       const itemRow = items.rows.find(r => r.id === itemId && r.owner === email && r.vehicleId === data.vehicleId);
       if (!itemRow) return;
-      const changes = { lastKm: row.mileage, lastDate: row.date, updatedAt: now };
-      updateRow_(items, itemRow._row, changes);
-      changedItems.push(itemToClient_({ ...itemRow, ...changes }));
+      updateRow_(items, itemRow._row, { lastKm: row.mileage, lastDate: row.date, updatedAt: now });
     });
 
-    return { record: recordToClient_(row), vehicle, items: changedItems };
+    // items 為該車全部保養項目（含重新推算的到期日）
+    return { record: recordToClient_(row), vehicle, items: refreshDueDates_(email, data.vehicleId) };
   });
 }
 
@@ -191,7 +190,7 @@ function svcDeleteRecord_(email, recordId) {
     const table = readTable_('records');
     const row = findOwned_(table, email, recordId);
     deleteRows_(table, [row._row]);
-    return { id: recordId };
+    return { id: recordId, items: refreshDueDates_(email, row.vehicleId) };
   });
 }
 
@@ -229,6 +228,7 @@ function svcImportAll_(email, data) {
       deleteRows_(table, table.rows.filter(r => r.owner === email).map(r => r._row));
       appendRows_(readTable_(key), rows);
     });
+    vehicleRows.forEach(v => refreshDueDates_(email, v.id));
 
     return { vehicles: vehicleRows.length, maintenanceItems: itemRows.length, records: recordRows.length };
   });

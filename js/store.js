@@ -6,10 +6,23 @@ import { showToast } from './utils.js';
 const DEFAULT_STORAGE_KEY = 'cartracker_db_v1';
 const LEGACY_STORAGE_KEY = 'autocare99_pro_db_v1';
 
+// 資料格式版本；格式變更時遞增並在 migrate() 補上轉換
+export const SCHEMA_VERSION = 1;
+
 let appState = null;
 
+function emptyState() {
+  return { schemaVersion: SCHEMA_VERSION, currentVehicleId: null, vehicles: [], maintenanceItems: [], records: [] };
+}
+
 function cloneInitialState() {
-  return JSON.parse(JSON.stringify(INITIAL_STATE));
+  return { ...JSON.parse(JSON.stringify(INITIAL_STATE)), schemaVersion: SCHEMA_VERSION };
+}
+
+// 舊版資料（無 schemaVersion）即為第 1 版格式
+function migrate(data) {
+  if (!data.schemaVersion) data.schemaVersion = 1;
+  return data;
 }
 
 function persist() {
@@ -35,15 +48,10 @@ export function load() {
       localStorage.removeItem(LEGACY_STORAGE_KEY);
     }
     const json = localStorage.getItem(DEFAULT_STORAGE_KEY);
-    if (json) {
-      appState = JSON.parse(json);
-    } else {
-      appState = cloneInitialState();
-      persist();
-    }
+    appState = json ? migrate(JSON.parse(json)) : emptyState();
   } catch (e) {
-    console.warn('LocalStorage error, fallback to initial state', e);
-    appState = cloneInitialState();
+    console.warn('LocalStorage error, fallback to empty state', e);
+    appState = emptyState();
   }
 }
 
@@ -92,9 +100,7 @@ export function deleteVehicle(vehicleId) {
   appState.vehicles = appState.vehicles.filter(item => item.id !== vehicleId);
   appState.maintenanceItems = appState.maintenanceItems.filter(item => item.vehicleId !== vehicleId);
   appState.records = appState.records.filter(item => item.vehicleId !== vehicleId);
-  if (appState.vehicles.length > 0) {
-    appState.currentVehicleId = appState.vehicles[0].id;
-  }
+  appState.currentVehicleId = appState.vehicles.length > 0 ? appState.vehicles[0].id : null;
   persist();
 }
 
@@ -175,11 +181,12 @@ export function exportData() {
 }
 
 export function isValidBackup(data) {
-  return !!(data && data.vehicles && data.maintenanceItems && data.records);
+  return !!(data && data.vehicles && data.maintenanceItems && data.records)
+    && !(data.schemaVersion > SCHEMA_VERSION);
 }
 
 export function importData(data) {
-  appState = data;
+  appState = migrate(data);
   persist();
 }
 

@@ -3,6 +3,25 @@ import * as store from '../store.js';
 import { formatNumber, showToast, openModal, closeModal, openConfirmModal } from '../utils.js';
 import { renderApp } from '../render/app.js';
 
+function openVehicleModal(v) {
+  const isEdit = !!v;
+  document.getElementById('vehicle-modal-title').innerHTML = isEdit
+    ? '<i class="fa-solid fa-car-side text-emerald-400"></i> 管理車輛資訊'
+    : '<i class="fa-solid fa-plus text-emerald-400"></i> 新增車輛';
+  document.getElementById('vehicle-edit-id').value = isEdit ? v.id : '';
+  document.getElementById('vehicle-input-name').value = isEdit ? v.name : '';
+  document.getElementById('vehicle-input-plate').value = isEdit ? v.plate : '';
+  document.getElementById('vehicle-input-type').value = isEdit ? v.type : 'moto';
+  document.getElementById('vehicle-input-mileage').value = isEdit ? v.currentMileage : '';
+  document.getElementById('vehicle-input-year').value = isEdit ? v.year : new Date().getFullYear();
+  document.getElementById('vehicle-input-notes').value = isEdit ? v.notes || '' : '';
+
+  document.getElementById('btn-vehicle-new').classList.toggle('hidden', !isEdit);
+  document.getElementById('btn-delete-vehicle').classList.toggle('hidden', !isEdit);
+
+  openModal('modal-vehicle');
+}
+
 export function initVehicleActions() {
   // 快速更新里程
   document.getElementById('btn-quick-mileage').addEventListener('click', () => {
@@ -34,27 +53,12 @@ export function initVehicleActions() {
     showToast(`已切換至 ${store.getCurrentVehicle().name}`);
   });
 
-  // 開啟車輛管理
+  // 開啟車輛管理：有車時編輯目前車輛，沒有車時直接新增
   document.getElementById('btn-open-vehicle-modal').addEventListener('click', () => {
-    const v = store.getCurrentVehicle();
-    document.getElementById('vehicle-modal-title').innerHTML = '<i class="fa-solid fa-car-side text-emerald-400"></i> 管理車輛資訊';
-    document.getElementById('vehicle-edit-id').value = v.id;
-    document.getElementById('vehicle-input-name').value = v.name;
-    document.getElementById('vehicle-input-plate').value = v.plate;
-    document.getElementById('vehicle-input-type').value = v.type;
-    document.getElementById('vehicle-input-mileage').value = v.currentMileage;
-    document.getElementById('vehicle-input-year').value = v.year;
-    document.getElementById('vehicle-input-notes').value = v.notes || '';
-
-    const delBtn = document.getElementById('btn-delete-vehicle');
-    if (store.getVehicles().length > 1) {
-      delBtn.classList.remove('hidden');
-    } else {
-      delBtn.classList.add('hidden');
-    }
-
-    openModal('modal-vehicle');
+    openVehicleModal(store.getCurrentVehicle());
   });
+  document.getElementById('btn-vehicle-new').addEventListener('click', () => openVehicleModal(null));
+  document.getElementById('btn-welcome-add-vehicle').addEventListener('click', () => openVehicleModal(null));
 
   document.getElementById('form-vehicle').addEventListener('submit', (e) => {
     e.preventDefault();

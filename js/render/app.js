@@ -8,7 +8,14 @@ import { renderStatsTab } from './stats.js';
 
 export function renderApp() {
   const vehicle = store.getCurrentVehicle();
-  if (!vehicle) return;
+
+  // 尚未建立車輛時只顯示歡迎畫面
+  const isEmpty = !vehicle;
+  document.getElementById('empty-welcome').classList.toggle('hidden', !isEmpty);
+  ['hero-section', 'main-content', 'vehicle-select-wrap', 'btn-quick-mileage'].forEach(id => {
+    document.getElementById(id).classList.toggle('hidden', isEmpty);
+  });
+  if (isEmpty) return;
 
   // 1. 車輛下拉選單
   const select = document.getElementById('vehicle-select');

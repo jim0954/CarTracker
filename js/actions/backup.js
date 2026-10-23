@@ -24,6 +24,10 @@ export function initBackupActions() {
   // 2. 匯出 CSV
   document.getElementById('btn-export-csv').addEventListener('click', () => {
     const v = store.getCurrentVehicle();
+    if (!v) {
+      showToast('目前沒有車輛可匯出', 'error');
+      return;
+    }
     const records = store.getRecords(v.id);
 
     let csvContent = '﻿'; // UTF-8 BOM
@@ -79,13 +83,15 @@ export function initBackupActions() {
     this.value = '';
   });
 
-  // 4. 重設示範資料
+  // 4. 載入範例資料
+  const loadSample = () => {
+    store.resetToSample();
+    closeModal('modal-backup');
+    renderApp();
+    showToast('已載入範例資料');
+  };
   document.getElementById('btn-reset-demo').addEventListener('click', () => {
-    openConfirmModal('重設範例資料', '您確定要重設為預設範例資料嗎？目前的記錄將會被覆蓋。', () => {
-      store.resetToSample();
-      closeModal('modal-backup');
-      renderApp();
-      showToast('已重設為預設示範資料');
-    });
+    openConfirmModal('載入範例資料', '確定要載入範例資料嗎？目前的記錄將會被覆蓋。', loadSample);
   });
+  document.getElementById('btn-welcome-sample').addEventListener('click', loadSample);
 }

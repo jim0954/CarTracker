@@ -50,7 +50,7 @@
       <!-- Vehicle Selector & Mileage Quick Update -->
       <div class="flex items-center gap-2 sm:gap-4">
         <!-- Vehicle Switcher Dropdown -->
-        <div class="relative flex items-center">
+        <div id="vehicle-select-wrap" class="relative flex items-center">
           <label for="vehicle-select" class="sr-only">選擇車輛</label>
           <select id="vehicle-select" class="bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-medium rounded-xl border border-slate-600 px-3 py-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition">
             <!-- Populated dynamically -->
@@ -77,8 +77,27 @@
     </div>
   </header>
 
+  <!-- Empty State：尚未建立車輛 -->
+  <section id="empty-welcome" class="hidden max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full flex-1">
+    <div class="bg-slate-800 border border-slate-700/80 rounded-3xl p-8 sm:p-10 text-center shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/20 mb-5">
+        <i class="fa-solid fa-car-side"></i>
+      </div>
+      <h1 class="text-2xl font-black text-white">歡迎使用 CarTracker</h1>
+      <p class="text-sm text-slate-400 mt-2">先新增你的第一台車，就可以開始記錄保養、加油與花費。</p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+        <button id="btn-welcome-add-vehicle" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus"></i> 新增第一台車
+        </button>
+        <button id="btn-welcome-sample" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 text-sm font-medium transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-flask"></i> 先看範例資料
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- Hero Vehicle Banner Card -->
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 w-full">
+  <section id="hero-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 w-full">
     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-800 via-slate-800 to-slate-850 border border-slate-700/80 shadow-2xl">
       <!-- Background Aesthetic Graphic -->
       <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-25 sm:opacity-40 pointer-events-none overflow-hidden">
@@ -148,7 +167,7 @@
   </section>
 
   <!-- Main Tabs Navigation -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col">
+  <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col">
     <!-- Tab Controls -->
     <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6 gap-2 overflow-x-auto custom-scrollbar">
       <nav class="flex space-x-2" aria-label="Tabs">
@@ -615,7 +634,12 @@
         <h3 id="vehicle-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-car-side text-emerald-400"></i> 新增 / 編輯車輛
         </h3>
-        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        <div class="flex items-center gap-3">
+          <button type="button" id="btn-vehicle-new" class="hidden px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-emerald-400 text-xs font-semibold transition">
+            <i class="fa-solid fa-plus mr-1"></i>新增另一台車
+          </button>
+          <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
       </div>
 
       <form id="form-vehicle" class="flex flex-col gap-4">
@@ -736,8 +760,8 @@
               <i class="fa-solid fa-rotate-left"></i>
             </div>
             <div class="text-left">
-              <span class="font-bold text-rose-300 block">重設為示範資料</span>
-              <span class="text-xs text-slate-400">清空並載入預設 DRG 與 RAV4 示範數據</span>
+              <span class="font-bold text-rose-300 block">載入範例資料</span>
+              <span class="text-xs text-slate-400">清空目前資料，改為一台機車與一台汽車的範例</span>
             </div>
           </div>
           <i class="fa-solid fa-arrow-rotate-right text-rose-400"></i>

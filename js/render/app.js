@@ -1,5 +1,5 @@
 // --- 整體畫面（車輛選單、Hero 區塊）---
-import { appState, getCurrentVehicle } from '../state.js';
+import * as store from '../store.js';
 import { formatNumber } from '../utils.js';
 import { renderMaintenanceTab } from './maintenance.js';
 import { renderRecordsTab } from './records.js';
@@ -7,13 +7,13 @@ import { renderFuelTab } from './fuel.js';
 import { renderStatsTab } from './stats.js';
 
 export function renderApp() {
-  const vehicle = getCurrentVehicle();
+  const vehicle = store.getCurrentVehicle();
   if (!vehicle) return;
 
   // 1. 車輛下拉選單
   const select = document.getElementById('vehicle-select');
   select.innerHTML = '';
-  appState.vehicles.forEach(v => {
+  store.getVehicles().forEach(v => {
     const opt = document.createElement('option');
     opt.value = v.id;
     opt.textContent = `${v.name} (${v.plate})`;
@@ -40,7 +40,7 @@ export function renderApp() {
   document.getElementById('current-mileage-label').textContent = formatNumber(vehicle.currentMileage);
 
   // 該車累計花費
-  const vehicleRecords = appState.records.filter(r => r.vehicleId === vehicle.id);
+  const vehicleRecords = store.getRecords(vehicle.id);
   const totalCost = vehicleRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   document.getElementById('hero-total-cost').textContent = formatNumber(totalCost);
 

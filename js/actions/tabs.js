@@ -1,5 +1,5 @@
 // --- 分頁切換 ---
-import { getCurrentVehicle } from '../state.js';
+import * as store from '../store.js';
 import { renderStatsTab } from '../render/stats.js';
 
 export function initTabs() {
@@ -23,7 +23,7 @@ export function initTabs() {
 
       // 切到統計分頁時重畫圖表
       if (tab.pane.id === 'tab-content-stats') {
-        renderStatsTab(getCurrentVehicle());
+        renderStatsTab(store.getCurrentVehicle());
       }
     });
   });

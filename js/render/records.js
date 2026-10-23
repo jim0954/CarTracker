@@ -1,5 +1,5 @@
 // --- 分頁 2：用車紀錄 ---
-import { appState } from '../state.js';
+import * as store from '../store.js';
 import { formatNumber, formatDate } from '../utils.js';
 
 export function renderRecordsTab(vehicle) {
@@ -10,7 +10,7 @@ export function renderRecordsTab(vehicle) {
   const searchKeyword = (document.getElementById('record-search-input').value || '').trim().toLowerCase();
   const filterType = document.getElementById('record-filter-type').value;
 
-  let records = appState.records.filter(r => r.vehicleId === vehicle.id);
+  let records = store.getRecords(vehicle.id);
 
   // Apply type filter
   if (filterType !== 'all') {

@@ -1,5 +1,5 @@
 // --- 用車紀錄：記一筆 / 編輯 / 刪除 ---
-import { appState, saveState, getCurrentVehicle } from '../state.js';
+import * as store from '../store.js';
 import { showToast, openModal, closeModal, openConfirmModal, todayStr } from '../utils.js';
 import { renderApp } from '../render/app.js';
 import { renderRecordsTab } from '../render/records.js';
@@ -7,7 +7,7 @@ import { renderRecordsTab } from '../render/records.js';
 function populateRecordMaintenanceCheckboxes(vehicle, selectedIds = []) {
   const container = document.getElementById('record-maintenance-checkboxes');
   container.innerHTML = '';
-  const items = appState.maintenanceItems.filter(i => i.vehicleId === vehicle.id);
+  const items = store.getItems(vehicle.id);
 
   if (items.length === 0) {
     container.innerHTML = '<span class="text-slate-500">尚無自訂保養項目</span>';
@@ -43,7 +43,7 @@ function toggleRecordTypeSections(type) {
 }
 
 export function openRecordModalForType(type, prefillTitle = '', prefillItemIds = []) {
-  const v = getCurrentVehicle();
+  const v = store.getCurrentVehicle();
   document.getElementById('record-modal-title').innerHTML = '<i class="fa-solid fa-pen-nib text-emerald-400"></i> 新增用車紀錄';
   document.getElementById('record-edit-id').value = '';
   document.getElementById('record-input-date').value = todayStr();
@@ -65,10 +65,10 @@ export function openRecordModalForType(type, prefillTitle = '', prefillItemIds =
 }
 
 export function editRecord(recordId) {
-  const rec = appState.records.find(r => r.id === recordId);
+  const rec = store.getRecord(recordId);
   if (!rec) return;
 
-  const v = getCurrentVehicle();
+  const v = store.getCurrentVehicle();
   document.getElementById('record-modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-emerald-400"></i> 編輯用車紀錄';
   document.getElementById('record-edit-id').value = rec.id;
   document.getElementById('record-input-date').value = rec.date;
@@ -96,8 +96,7 @@ export function editRecord(recordId) {
 
 export function deleteRecord(recordId) {
   openConfirmModal('刪除紀錄', '確定要刪除這筆用車紀錄嗎？刪除後無法還原。', () => {
-    appState.records = appState.records.filter(r => r.id !== recordId);
-    saveState();
+    store.deleteRecord(recordId);
     renderApp();
     showToast('紀錄已刪除');
   });
@@ -132,7 +131,7 @@ export function initRecordActions() {
 
   document.getElementById('form-record').addEventListener('submit', (e) => {
     e.preventDefault();
-    const v = getCurrentVehicle();
+    const v = store.getCurrentVehicle();
     const editId = document.getElementById('record-edit-id').value;
     const type = document.querySelector('input[name="record-type"]:checked').value;
     const date = document.getElementById('record-input-date').value;
@@ -161,43 +160,11 @@ export function initRecordActions() {
     }
 
     if (editId) {
-      const rec = appState.records.find(r => r.id === editId);
-      if (rec) {
-        rec.type = type;
-        rec.date = date;
-        rec.mileage = mileage;
-        rec.title = title;
-        rec.amount = amount;
-        rec.vendor = vendor;
-        rec.notes = notes;
-        rec.details = details;
-      }
+      store.saveRecord({ id: editId, date, mileage, type, title, amount, vendor, notes, details });
     } else {
-      const newRecord = {
-        id: 'rec_' + Date.now(),
-        vehicleId: v.id,
-        date, mileage, type, title, amount, vendor, notes, details
-      };
-      appState.records.push(newRecord);
-
-      // 里程較高時同步更新車輛目前里程
-      if (mileage > v.currentMileage) {
-        v.currentMileage = mileage;
-      }
-
-      // 保養紀錄：重設勾選項目的上次里程與日期
-      if (type === 'maintenance' && checkedItemIds.length > 0) {
-        checkedItemIds.forEach(itemId => {
-          const mItem = appState.maintenanceItems.find(it => it.id === itemId);
-          if (mItem) {
-            mItem.lastKm = mileage;
-            mItem.lastDate = date;
-          }
-        });
-      }
+      store.saveRecord({ vehicleId: v.id, date, mileage, type, title, amount, vendor, notes, details });
     }
 
-    saveState();
     closeModal('modal-record');
     renderApp();
     showToast('用車紀錄已儲存！');
@@ -205,9 +172,9 @@ export function initRecordActions() {
 
   // 搜尋與篩選
   document.getElementById('record-search-input').addEventListener('input', () => {
-    renderRecordsTab(getCurrentVehicle());
+    renderRecordsTab(store.getCurrentVehicle());
   });
   document.getElementById('record-filter-type').addEventListener('change', () => {
-    renderRecordsTab(getCurrentVehicle());
+    renderRecordsTab(store.getCurrentVehicle());
   });
 }

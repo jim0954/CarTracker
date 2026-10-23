@@ -1,5 +1,5 @@
 // --- 程式進入點 ---
-import { loadState } from './state.js';
+import * as store from './store.js';
 import { initModals } from './utils.js';
 import { renderApp } from './render/app.js';
 import { initTabs } from './actions/tabs.js';
@@ -31,5 +31,5 @@ initRecordActions();
 initItemActions();
 initBackupActions();
 
-loadState();
+store.load();
 renderApp();

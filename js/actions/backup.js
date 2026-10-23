@@ -1,5 +1,5 @@
 // --- 資料備份：匯出 JSON / CSV、匯入、重設示範資料 ---
-import { appState, setAppState, saveState, getCurrentVehicle, cloneInitialState } from '../state.js';
+import * as store from '../store.js';
 import { showToast, openModal, closeModal, openConfirmModal } from '../utils.js';
 import { renderApp } from '../render/app.js';
 
@@ -10,7 +10,7 @@ export function initBackupActions() {
 
   // 1. 匯出 JSON
   document.getElementById('btn-export-json').addEventListener('click', () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(store.exportData(), null, 2));
     const downloadAnchor = document.createElement('a');
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
     downloadAnchor.setAttribute('href', dataStr);
@@ -23,8 +23,8 @@ export function initBackupActions() {
 
   // 2. 匯出 CSV
   document.getElementById('btn-export-csv').addEventListener('click', () => {
-    const v = getCurrentVehicle();
-    const records = appState.records.filter(r => r.vehicleId === v.id);
+    const v = store.getCurrentVehicle();
+    const records = store.getRecords(v.id);
 
     let csvContent = '﻿'; // UTF-8 BOM
     csvContent += '日期,車輛名稱,車牌,類別,當時里程(km),項目摘要,金額(NT$),地點商家,公升數,單價,備註\n';
@@ -63,9 +63,8 @@ export function initBackupActions() {
     reader.onload = function(evt) {
       try {
         const parsed = JSON.parse(evt.target.result);
-        if (parsed && parsed.vehicles && parsed.maintenanceItems && parsed.records) {
-          setAppState(parsed);
-          saveState();
+        if (store.isValidBackup(parsed)) {
+          store.importData(parsed);
           closeModal('modal-backup');
           renderApp();
           showToast('備份資料已成功還原！');
@@ -83,8 +82,7 @@ export function initBackupActions() {
   // 4. 重設示範資料
   document.getElementById('btn-reset-demo').addEventListener('click', () => {
     openConfirmModal('重設範例資料', '您確定要重設為預設範例資料嗎？目前的記錄將會被覆蓋。', () => {
-      setAppState(cloneInitialState());
-      saveState();
+      store.resetToSample();
       closeModal('modal-backup');
       renderApp();
       showToast('已重設為預設示範資料');

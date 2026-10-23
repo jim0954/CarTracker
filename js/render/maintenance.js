@@ -1,12 +1,12 @@
 // --- 分頁 1：保養項目 ---
-import { appState } from '../state.js';
+import * as store from '../store.js';
 import { formatNumber } from '../utils.js';
 
 export function renderMaintenanceTab(vehicle) {
   const container = document.getElementById('maintenance-items-grid');
   container.innerHTML = '';
 
-  const items = appState.maintenanceItems.filter(item => item.vehicleId === vehicle.id);
+  const items = store.getItems(vehicle.id);
   let alertCount = 0;
 
   items.forEach(item => {

@@ -1,10 +1,10 @@
 // --- 分頁 3：加油與油耗 ---
-import { appState } from '../state.js';
+import * as store from '../store.js';
 import { formatNumber, formatDate } from '../utils.js';
 
 export function renderFuelTab(vehicle) {
-  const fuelRecords = appState.records
-    .filter(r => r.vehicleId === vehicle.id && r.type === 'fuel')
+  const fuelRecords = store.getRecords(vehicle.id)
+    .filter(r => r.type === 'fuel')
     .sort((a, b) => a.mileage - b.mileage); // sort asc to compute intervals
 
   const tbody = document.getElementById('fuel-table-body');
@@ -13,6 +13,7 @@ export function renderFuelTab(vehicle) {
   let totalFuelCost = 0;
   let totalLiters = 0;
   let calculatedIntervals = [];
+  const intervalInfo = new Map(); // 記錄 id → 區間里程與油耗（不寫回資料）
 
   for (let i = 0; i < fuelRecords.length; i++) {
     const curr = fuelRecords[i];
@@ -35,8 +36,7 @@ export function renderFuelTab(vehicle) {
         });
       }
     }
-    curr._intervalDist = intervalDistance;
-    curr._kmPerLiter = kmPerLiter;
+    intervalInfo.set(curr.id, { dist: intervalDistance, kmPerLiter });
   }
 
   // Display stats
@@ -64,9 +64,10 @@ export function renderFuelTab(vehicle) {
 
     const liters = r.details ? (Number(r.details.liters) || 0).toFixed(2) : '-';
     const price = r.details && r.details.pricePerLiter ? r.details.pricePerLiter : '-';
-    const distStr = r._intervalDist ? `${formatNumber(r._intervalDist)} km` : '-';
-    const kmlBadge = r._kmPerLiter 
-      ? `<span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${r._kmPerLiter} km/L</span>`
+    const info = intervalInfo.get(r.id);
+    const distStr = info.dist ? `${formatNumber(info.dist)} km` : '-';
+    const kmlBadge = info.kmPerLiter
+      ? `<span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${info.kmPerLiter} km/L</span>`
       : '<span class="text-slate-600 text-xs">-</span>';
 
     tr.innerHTML = `

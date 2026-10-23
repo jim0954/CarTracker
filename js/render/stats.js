@@ -1,12 +1,12 @@
 // --- 分頁 4：費用統計圖表 ---
-import { appState } from '../state.js';
+import * as store from '../store.js';
 import { formatNumber } from '../utils.js';
 
 let monthlyCostChartInstance = null;
 let categoryPieChartInstance = null;
 
 export function renderStatsTab(vehicle) {
-  const records = appState.records.filter(r => r.vehicleId === vehicle.id);
+  const records = store.getRecords(vehicle.id);
 
   // Breakdown sums
   let maintCost = 0, maintCount = 0;

@@ -1,18 +1,18 @@
 // --- 保養項目：新增 / 編輯 / 刪除 / 記錄更換 ---
-import { appState, saveState, getCurrentVehicle } from '../state.js';
+import * as store from '../store.js';
 import { showToast, openModal, closeModal, openConfirmModal, todayStr } from '../utils.js';
 import { renderApp } from '../render/app.js';
 import { openRecordModalForType } from './record.js';
 
 export function quickCompleteMaintenance(itemId) {
-  const item = appState.maintenanceItems.find(it => it.id === itemId);
+  const item = store.getItem(itemId);
   if (!item) return;
 
   openRecordModalForType('maintenance', `更換 ${item.name}`, [itemId]);
 }
 
 export function editMaintenanceItem(itemId) {
-  const item = appState.maintenanceItems.find(it => it.id === itemId);
+  const item = store.getItem(itemId);
   if (!item) return;
 
   document.getElementById('item-modal-title').innerHTML = '<i class="fa-solid fa-gear text-emerald-400"></i> 編輯保養項目週期';
@@ -27,12 +27,11 @@ export function editMaintenanceItem(itemId) {
 }
 
 export function deleteMaintenanceItem(itemId) {
-  const item = appState.maintenanceItems.find(it => it.id === itemId);
+  const item = store.getItem(itemId);
   if (!item) return;
 
   openConfirmModal('刪除保養項目', `確定要刪除「${item.name}」嗎？`, () => {
-    appState.maintenanceItems = appState.maintenanceItems.filter(it => it.id !== itemId);
-    saveState();
+    store.deleteItem(itemId);
     renderApp();
     showToast('保養項目已移除');
   });
@@ -40,7 +39,7 @@ export function deleteMaintenanceItem(itemId) {
 
 export function initItemActions() {
   document.getElementById('btn-add-maintenance-item').addEventListener('click', () => {
-    const v = getCurrentVehicle();
+    const v = store.getCurrentVehicle();
     document.getElementById('item-modal-title').innerHTML = '<i class="fa-solid fa-plus text-emerald-400"></i> 新增自訂保養項目';
     document.getElementById('item-edit-id').value = '';
     document.getElementById('item-input-name').value = '';
@@ -54,7 +53,7 @@ export function initItemActions() {
 
   document.getElementById('form-item').addEventListener('submit', (e) => {
     e.preventDefault();
-    const v = getCurrentVehicle();
+    const v = store.getCurrentVehicle();
     const editId = document.getElementById('item-edit-id').value;
     const name = document.getElementById('item-input-name').value.trim();
     const intervalKm = parseInt(document.getElementById('item-input-interval-km').value, 10);
@@ -64,24 +63,11 @@ export function initItemActions() {
     const notes = document.getElementById('item-input-notes').value.trim();
 
     if (editId) {
-      const item = appState.maintenanceItems.find(it => it.id === editId);
-      if (item) {
-        item.name = name;
-        item.intervalKm = intervalKm;
-        item.intervalMonths = intervalMonths;
-        item.lastKm = lastKm;
-        item.lastDate = lastDate;
-        item.notes = notes;
-      }
+      store.saveItem({ id: editId, name, intervalKm, intervalMonths, lastKm, lastDate, notes });
     } else {
-      appState.maintenanceItems.push({
-        id: 'item_' + Date.now(),
-        vehicleId: v.id,
-        name, intervalKm, intervalMonths, lastKm, lastDate, notes
-      });
+      store.saveItem({ vehicleId: v.id, name, intervalKm, intervalMonths, lastKm, lastDate, notes });
     }
 
-    saveState();
     closeModal('modal-item');
     renderApp();
     showToast('保養項目已儲存！');

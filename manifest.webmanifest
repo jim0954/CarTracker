@@ -1,0 +1,17 @@
+{
+  "name": "CarTracker 汽機車保養紀錄",
+  "short_name": "CarTracker",
+  "description": "記錄汽機車保養、加油與花費，保養到期自動提醒",
+  "lang": "zh-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

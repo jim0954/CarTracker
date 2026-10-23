@@ -112,6 +112,11 @@ function initCloudMode() {
   startSession(loadCloudData);
 }
 
+// 可加到主畫面並離線開啟（需 https 或 localhost）
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker 註冊失敗', err));
+}
+
 // 本機模式直接使用瀏覽器資料；雲端模式需先登入
 if (isCloudMode) {
   initCloudMode();

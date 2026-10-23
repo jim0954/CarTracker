@@ -1,5 +1,7 @@
 // --- 程式進入點 ---
 import * as store from './store.js';
+import { isCloudMode } from './config.js';
+import { startSession } from './session.js';
 import { initModals } from './utils.js';
 import { renderApp } from './render/app.js';
 import { initTabs } from './actions/tabs.js';
@@ -31,5 +33,13 @@ initRecordActions();
 initItemActions();
 initBackupActions();
 
-store.load();
-renderApp();
+// 本機模式直接使用瀏覽器資料；雲端模式需先登入
+if (isCloudMode) {
+  startSession(() => {
+    store.load();
+    renderApp();
+  });
+} else {
+  store.load();
+  renderApp();
+}

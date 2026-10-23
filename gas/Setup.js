@@ -4,7 +4,8 @@
 
 const SETTING_DEFAULTS = [
   ['CLIENT_ID', '', 'Google 登入用的 OAuth 用戶端 ID（xxx.apps.googleusercontent.com）'],
-  ['DEFAULT_REMIND_DAYS', '7', '新成員預設的提前提醒天數']
+  ['DEFAULT_REMIND_DAYS', '7', '新成員預設的提前提醒天數'],
+  ['APP_URL', 'https://jim0954.github.io/CarTracker/', '網頁網址（顯示在日曆事件與提醒信中）']
 ];
 
 function setup() {
@@ -67,6 +68,9 @@ function setup() {
       calendarEnabled: true, emailEnabled: true
     }]);
   }
+
+  // 建立保養提醒日曆
+  getCalendar_();
 
   SpreadsheetApp.getActive().toast('CarTracker 初始化完成', 'CarTracker', 5);
 }

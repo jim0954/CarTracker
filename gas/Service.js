@@ -102,8 +102,9 @@ function svcSaveVehicle_(email, data) {
       const row = existing;
       const changes = { ...pick_(data, VEHICLE_FIELDS), updatedAt: now };
       updateRow_(table, row._row, changes);
-      // 里程變動會影響到期日推算
-      return { vehicle: vehicleToClient_({ ...row, ...changes }), items: refreshDueDates_(email, data.id) };
+      // 里程變動會影響到期日推算；車名 / 車牌變動需更新日曆事件標題
+      const renamed = ('name' in data && data.name !== row.name) || ('plate' in data && data.plate !== row.plate);
+      return { vehicle: vehicleToClient_({ ...row, ...changes }), items: refreshDueDates_(email, row.id, true, renamed) };
     }
     const row = {
       ...pick_(data, VEHICLE_FIELDS),
@@ -121,6 +122,9 @@ function svcDeleteVehicle_(email, vehicleId) {
   return withLock_(() => {
     const vehicles = readTable_('vehicles');
     const row = findOwned_(vehicles, email, vehicleId);
+    readTable_('items').rows
+      .filter(r => r.owner === email && r.vehicleId === vehicleId)
+      .forEach(r => deleteItemEvent_(r.calendarEventId));
     ['records', 'items'].forEach(key => {
       const table = readTable_(key);
       deleteRows_(table, table.rows.filter(r => r.owner === email && r.vehicleId === vehicleId).map(r => r._row));
@@ -140,7 +144,7 @@ function svcSaveItem_(email, data) {
       const row = existing;
       const changes = { ...pick_(data, ITEM_FIELDS), updatedAt: now };
       updateRow_(table, row._row, changes);
-      return { item: refreshDueDates_(email, row.vehicleId).find(it => it.id === row.id) };
+      return { item: refreshDueDates_(email, row.vehicleId, true, [row.id]).find(it => it.id === row.id) };
     }
     findOwned_(readTable_('vehicles'), email, data.vehicleId);
     const row = { ...pick_(data, ITEM_FIELDS), id: clientId_(data.id, 'item'), owner: email, vehicleId: data.vehicleId, updatedAt: now };
@@ -153,6 +157,7 @@ function svcDeleteItem_(email, itemId) {
   return withLock_(() => {
     const table = readTable_('items');
     const row = findOwned_(table, email, itemId);
+    deleteItemEvent_(row.calendarEventId);
     deleteRows_(table, [row._row]);
     return { id: itemId };
   });
@@ -243,11 +248,14 @@ function svcImportAll_(email, data, append) {
     [['records', recordRows], ['items', itemRows], ['vehicles', vehicleRows]].forEach(([key, rows]) => {
       if (!append) {
         const table = readTable_(key);
-        deleteRows_(table, table.rows.filter(r => r.owner === email).map(r => r._row));
+        const own = table.rows.filter(r => r.owner === email);
+        if (key === 'items') own.forEach(r => deleteItemEvent_(r.calendarEventId));
+        deleteRows_(table, own.map(r => r._row));
       }
       appendRows_(readTable_(key), rows);
     });
-    vehicleRows.forEach(v => refreshDueDates_(email, v.id));
+    // 大量匯入時先不建立日曆事件（避免一次寄出大量邀請），由每日排程補建
+    vehicleRows.forEach(v => refreshDueDates_(email, v.id, false));
 
     return { vehicles: vehicleRows.length, maintenanceItems: itemRows.length, records: recordRows.length };
   });

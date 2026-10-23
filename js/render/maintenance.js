@@ -92,6 +92,7 @@ export function renderMaintenanceTab(vehicle) {
             <span class="text-[10px] text-slate-500 block">每 ${formatNumber(item.intervalKm)} km / ${escapeHtml(item.intervalMonths)}月</span>
           </div>
         </div>
+        ${item.dueDate ? `<p class="text-[11px] text-slate-400 mt-2"><i class="fa-regular fa-calendar mr-1"></i>預計到期日 <span class="font-mono text-slate-300">${escapeHtml(item.dueDate)}</span></p>` : ''}
       </div>
 
       <!-- Card Actions -->

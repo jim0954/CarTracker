@@ -35,8 +35,14 @@ function showUser(user) {
 
 // 登入成功（含之後重新登入）時呼叫 onLoggedIn(user)
 export async function startSession(onLoggedIn) {
+  // 登出時一併清除本機的雲端資料快取（共用裝置時保護隱私）
   $('btn-sign-out').addEventListener('click', () => {
     signOut();
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('cartracker_cache_'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch (e) { /* 忽略 */ }
     location.reload();
   });
 

@@ -11,6 +11,19 @@ function withLock_(fn) {
   }
 }
 
+// 前端（樂觀更新）會自行產生 ID；格式正確才採用，否則由後台產生
+function clientId_(id, prefix) {
+  return typeof id === 'string' && new RegExp(`^${prefix}_[A-Za-z0-9-]{6,64}$`).test(id) ? id : newId_(prefix);
+}
+
+// 有同 ID 資料：屬於自己則回傳該列，屬於別人則拒絕；沒有則回傳 null（視為新增）
+function findExisting_(table, email, id) {
+  if (!id) return null;
+  const row = table.rows.find(r => r.id === id);
+  if (row && row.owner !== email) throw new AppError_('NOT_FOUND', '找不到資料或沒有權限');
+  return row || null;
+}
+
 function findOwned_(table, email, id) {
   const row = table.rows.find(r => r.id === id && r.owner === email);
   if (!row) throw new AppError_('NOT_FOUND', '找不到資料或沒有權限');
@@ -84,8 +97,9 @@ function svcSaveVehicle_(email, data) {
   return withLock_(() => {
     const table = readTable_('vehicles');
     const now = new Date();
-    if (data.id) {
-      const row = findOwned_(table, email, data.id);
+    const existing = findExisting_(table, email, data.id);
+    if (existing) {
+      const row = existing;
       const changes = { ...pick_(data, VEHICLE_FIELDS), updatedAt: now };
       updateRow_(table, row._row, changes);
       // 里程變動會影響到期日推算
@@ -93,7 +107,7 @@ function svcSaveVehicle_(email, data) {
     }
     const row = {
       ...pick_(data, VEHICLE_FIELDS),
-      id: newId_('v'), owner: email,
+      id: clientId_(data.id, 'v'), owner: email,
       initialMileage: data.currentMileage || 0,
       createdAt: now, updatedAt: now
     };
@@ -121,14 +135,15 @@ function svcSaveItem_(email, data) {
   return withLock_(() => {
     const table = readTable_('items');
     const now = new Date();
-    if (data.id) {
-      const row = findOwned_(table, email, data.id);
+    const existing = findExisting_(table, email, data.id);
+    if (existing) {
+      const row = existing;
       const changes = { ...pick_(data, ITEM_FIELDS), updatedAt: now };
       updateRow_(table, row._row, changes);
       return { item: refreshDueDates_(email, row.vehicleId).find(it => it.id === row.id) };
     }
     findOwned_(readTable_('vehicles'), email, data.vehicleId);
-    const row = { ...pick_(data, ITEM_FIELDS), id: newId_('item'), owner: email, vehicleId: data.vehicleId, updatedAt: now };
+    const row = { ...pick_(data, ITEM_FIELDS), id: clientId_(data.id, 'item'), owner: email, vehicleId: data.vehicleId, updatedAt: now };
     appendRows_(table, [row]);
     return { item: refreshDueDates_(email, data.vehicleId).find(it => it.id === row.id) };
   });
@@ -151,8 +166,9 @@ function svcSaveRecord_(email, data) {
     const records = readTable_('records');
     const now = new Date();
 
-    if (data.id) {
-      const row = findOwned_(records, email, data.id);
+    const existing = findExisting_(records, email, data.id);
+    if (existing) {
+      const row = existing;
       const changes = { ...recordFromClient_(data), updatedAt: now };
       updateRow_(records, row._row, changes);
       return { record: recordToClient_({ ...row, ...changes }), items: refreshDueDates_(email, row.vehicleId) };
@@ -162,7 +178,7 @@ function svcSaveRecord_(email, data) {
     const vehicleRow = findOwned_(vehicles, email, data.vehicleId);
     const row = {
       ...recordFromClient_(data),
-      id: newId_('rec'), owner: email, vehicleId: data.vehicleId,
+      id: clientId_(data.id, 'rec'), owner: email, vehicleId: data.vehicleId,
       createdAt: now, updatedAt: now
     };
     appendRows_(records, [row]);

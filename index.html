@@ -78,6 +78,9 @@
         <div id="user-chip" class="hidden flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-700">
           <img id="user-avatar" alt="" referrerpolicy="no-referrer" class="w-8 h-8 rounded-full bg-slate-700 object-cover">
           <span id="user-name" class="hidden lg:inline text-xs text-slate-300 max-w-[8rem] truncate"></span>
+          <button id="btn-sync" title="重新整理" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition">
+            <i id="sync-icon" class="fa-solid fa-rotate"></i>
+          </button>
           <button id="btn-sign-out" title="登出" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition">
             <i class="fa-solid fa-right-from-bracket"></i>
           </button>
@@ -733,7 +736,7 @@
         <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <p class="text-xs text-slate-400 mb-4">
+      <p id="backup-desc" class="text-xs text-slate-400 mb-4">
         本系統所有用車紀錄與保養提醒皆儲存於您的瀏覽器本機 (LocalStorage)，永不上傳第三方伺服器。您可以隨時匯出備份或轉移至其他手機與裝置！
       </p>
 
@@ -776,7 +779,7 @@
               </div>
               <div class="text-left">
                 <span class="font-bold text-white block">匯入 JSON 備份檔</span>
-                <span class="text-xs text-slate-400">將備份檔還原至目前瀏覽器</span>
+                <span id="import-desc" class="text-xs text-slate-400">將備份檔還原至目前瀏覽器</span>
               </div>
             </div>
             <i class="fa-solid fa-upload text-slate-400"></i>

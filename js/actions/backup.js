@@ -1,7 +1,23 @@
 // --- 資料備份：匯出 JSON / CSV、匯入、重設示範資料 ---
 import * as store from '../store.js';
 import { showToast, openModal, closeModal, openConfirmModal } from '../utils.js';
+import { showLoading, hideLoading } from '../session.js';
 import { renderApp } from '../render/app.js';
+
+// 雲端模式下匯入需等後台寫入完成
+async function runImport(task, successMessage) {
+  closeModal('modal-backup');
+  showLoading('資料寫入中…');
+  try {
+    await task();
+    renderApp();
+    showToast(successMessage);
+  } catch (err) {
+    showToast(err.message || '匯入失敗', 'error');
+  } finally {
+    hideLoading();
+  }
+}
 
 export function initBackupActions() {
   document.getElementById('btn-open-backup-modal').addEventListener('click', () => {
@@ -68,10 +84,7 @@ export function initBackupActions() {
       try {
         const parsed = JSON.parse(evt.target.result);
         if (store.isValidBackup(parsed)) {
-          store.importData(parsed);
-          closeModal('modal-backup');
-          renderApp();
-          showToast('備份資料已成功還原！');
+          runImport(() => store.importData(parsed), '備份資料已成功還原！');
         } else {
           showToast('檔案格式不符合 CarTracker 備份規範', 'error');
         }
@@ -84,12 +97,7 @@ export function initBackupActions() {
   });
 
   // 4. 載入範例資料
-  const loadSample = () => {
-    store.resetToSample();
-    closeModal('modal-backup');
-    renderApp();
-    showToast('已載入範例資料');
-  };
+  const loadSample = () => runImport(() => store.resetToSample(), '已載入範例資料');
   document.getElementById('btn-reset-demo').addEventListener('click', () => {
     openConfirmModal('載入範例資料', '確定要載入範例資料嗎？目前的記錄將會被覆蓋。', loadSample);
   });

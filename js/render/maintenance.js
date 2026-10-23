@@ -2,6 +2,32 @@
 import * as store from '../store.js';
 import { formatNumber, escapeHtml } from '../utils.js';
 
+function toYmd(date) {
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// 「加入 Google 日曆」連結：以預計到期日（雲端推算）或月數到期日建立全天事件
+function calendarUrl(vehicle, item, fallbackDate, nextMileage) {
+  const due = item.dueDate ? new Date(`${item.dueDate}T00:00:00`) : fallbackDate;
+  const end = new Date(due);
+  end.setDate(end.getDate() + 1);
+  const lines = [
+    `車輛：${vehicle.name}（${vehicle.plate}）`,
+    `建議保養里程：${formatNumber(nextMileage)} km`,
+    `上次更換：${formatNumber(item.lastKm)} km（${item.lastDate || '未填'}）`
+  ];
+  if (item.notes) lines.push(`備註：${item.notes}`);
+  lines.push('', '由 CarTracker 建立');
+  const details = lines.join('\n');
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `🔧 ${vehicle.name} ${item.name} 保養到期`,
+    dates: `${toYmd(due)}/${toYmd(end)}`,
+    details
+  });
+  return `https://calendar.google.com/calendar/render?${params}`;
+}
+
 export function renderMaintenanceTab(vehicle) {
   const container = document.getElementById('maintenance-items-grid');
   container.innerHTML = '';
@@ -104,6 +130,9 @@ export function renderMaintenanceTab(vehicle) {
           <button data-action="delete-item" data-id="${escapeHtml(item.id)}" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="刪除項目">
             <i class="fa-solid fa-trash-can"></i>
           </button>
+          <a href="${escapeHtml(calendarUrl(vehicle, item, nextDateObj, nextMileage))}" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-sky-300 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="加入 Google 日曆">
+            <i class="fa-regular fa-calendar-plus"></i>
+          </a>
         </div>
 
         <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">

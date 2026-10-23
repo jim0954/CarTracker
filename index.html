@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarTracker - 汽機車保養紀錄</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+      <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-4" id="confirm-modal-icon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="text-lg font-bold text-white mb-2" id="confirm-modal-title">確認操作</h3>
+      <p class="text-slate-400 text-sm mb-6" id="confirm-modal-message">您確定要執行這項操作嗎？</p>
+      <div class="flex gap-3 justify-end">
+        <button id="confirm-modal-cancel" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition">取消</button>
+        <button id="confirm-modal-ok" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-medium transition">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header / Navigation Bar -->
+  <header class="bg-slate-800/90 border-b border-slate-700/80 sticky top-0 z-30 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <!-- Logo & Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-gauge-high text-lg"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">CarTracker</span>
+          <p class="text-[11px] text-slate-400 leading-none">智慧用車與保養提醒系統</p>
+        </div>
+      </div>
+
+      <!-- Vehicle Selector & Mileage Quick Update -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        <!-- Vehicle Switcher Dropdown -->
+        <div class="relative flex items-center">
+          <label for="vehicle-select" class="sr-only">選擇車輛</label>
+          <select id="vehicle-select" class="bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-medium rounded-xl border border-slate-600 px-3 py-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition">
+            <!-- Populated dynamically -->
+          </select>
+          <i class="fa-solid fa-chevron-down absolute right-3 pointer-events-none text-slate-400 text-xs"></i>
+        </div>
+
+        <!-- Add Vehicle Button -->
+        <button id="btn-open-vehicle-modal" title="管理車輛 / 新增車輛" class="w-9 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition">
+          <i class="fa-solid fa-car"></i>
+        </button>
+
+        <!-- Quick Update Mileage Button -->
+        <button id="btn-quick-mileage" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-emerald-600/30 transition">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span class="hidden sm:inline">更新里程</span>
+        </button>
+
+        <!-- Settings / Backup Menu -->
+        <button id="btn-open-backup-modal" title="資料備份與匯出" class="w-9 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Vehicle Banner Card -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 w-full">
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-800 via-slate-800 to-slate-850 border border-slate-700/80 shadow-2xl">
+      <!-- Background Aesthetic Graphic -->
+      <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-25 sm:opacity-40 pointer-events-none overflow-hidden">
+        <img src="assets/hero.jpg" alt="Dashboard Graphic" class="w-full h-full object-cover object-center">
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-800/60 to-transparent"></div>
+      </div>
+
+      <div class="relative p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span id="vehicle-badge-type" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <i class="fa-solid fa-motorcycle mr-1"></i>機車
+            </span>
+            <span id="vehicle-plate" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-700 text-slate-300 border border-slate-600">
+              MBQ-8899
+            </span>
+            <span id="vehicle-year" class="text-xs text-slate-400">
+              2023 年式
+            </span>
+          </div>
+
+          <h1 id="vehicle-title" class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            SYM DRG BT 158
+          </h1>
+          <p id="vehicle-notes" class="text-xs sm:text-sm text-slate-400 mt-1">
+            主要通勤代步車 • 定期機油與耗材守護中
+          </p>
+        </div>
+
+        <!-- Key Metrics Cards in Hero -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          <!-- Mileage Card -->
+          <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between">
+            <span class="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-road text-emerald-400"></i> 目前累計里程
+            </span>
+            <div class="mt-2">
+              <span id="hero-current-mileage" class="text-2xl sm:text-3xl font-black font-mono text-emerald-400">12,850</span>
+              <span class="text-xs text-slate-400 ml-1">km</span>
+            </div>
+          </div>
+
+          <!-- Pending Alerts Card -->
+          <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between">
+            <span class="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-bell text-amber-400"></i> 保養待辦項目
+            </span>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span id="hero-alert-count" class="text-2xl sm:text-3xl font-black font-mono text-amber-400">2</span>
+              <span class="text-xs text-slate-400">項需注意</span>
+            </div>
+          </div>
+
+          <!-- Total Expense Card -->
+          <div class="col-span-2 sm:col-span-1 bg-slate-900/80 backdrop-blur-sm border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between">
+            <span class="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-receipt text-sky-400"></i> 累計總花費
+            </span>
+            <div class="mt-2">
+              <span class="text-xs text-slate-400 mr-0.5">NT$</span>
+              <span id="hero-total-cost" class="text-2xl sm:text-3xl font-black font-mono text-white">16,420</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Tabs Navigation -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col">
+    <!-- Tab Controls -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6 gap-2 overflow-x-auto custom-scrollbar">
+      <nav class="flex space-x-2" aria-label="Tabs">
+        <button id="tab-btn-maintenance" class="tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 transition">
+          <i class="fa-solid fa-screwdriver-wrench"></i>
+          <span>保養健康度與提醒</span>
+          <span id="badge-tab-alert" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold">2</span>
+        </button>
+
+        <button id="tab-btn-records" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent transition">
+          <i class="fa-solid fa-list-check"></i>
+          <span>用車歷程流水帳</span>
+        </button>
+
+        <button id="tab-btn-fuel" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent transition">
+          <i class="fa-solid fa-gas-pump"></i>
+          <span>加油與油耗計算</span>
+        </button>
+
+        <button id="tab-btn-stats" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent transition">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>費用分析與統計</span>
+        </button>
+      </nav>
+
+      <!-- Action Button for Quick Record -->
+      <button id="btn-open-record-modal" class="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-bold shadow-lg shadow-emerald-500/20 transition">
+        <i class="fa-solid fa-plus"></i>
+        <span>記一筆</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: Maintenance Items & Health (保養健康度) -->
+    <div id="tab-content-maintenance" class="tab-pane flex flex-col gap-6">
+      <!-- Section Header & Filter/Action -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span>耗材與保養項目狀態</span>
+            <span class="text-xs font-normal text-slate-400">依目前里程自動推算</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">系統將根據設定之週期與行駛里程，提醒您何時該進廠更換保養。</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-add-maintenance-item" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-plus text-emerald-400"></i> 自訂保養項目
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Legend Status Indicators -->
+      <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-slate-850 p-3 rounded-2xl border border-slate-800">
+        <span class="font-semibold text-slate-300">狀態圖例：</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 良好 (剩餘里程 > 500km)</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 即將到期 (剩餘 < 500km 或 14天)</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> 需立即保養 (已超額或逾期)</span>
+      </div>
+
+      <!-- Maintenance Cards Grid -->
+      <div id="maintenance-items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- TAB 2: Records List (用車歷程流水帳) -->
+    <div id="tab-content-records" class="tab-pane hidden flex flex-col gap-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">用車歷程與保養流水帳</h2>
+          <p class="text-xs text-slate-400 mt-0.5">所有加油、保養、改裝、保險與規費記錄一應俱全</p>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <input type="text" id="record-search-input" placeholder="搜尋項目、店家或備註..." class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48 sm:w-60">
+            <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-500 text-xs"></i>
+          </div>
+
+          <label for="record-filter-type" class="sr-only">記錄類型篩選</label>
+          <select id="record-filter-type" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+            <option value="all">所有類別</option>
+            <option value="maintenance">保養維修</option>
+            <option value="fuel">加油紀錄</option>
+            <option value="tax">稅費保險</option>
+            <option value="other">改裝美容與其他</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Records Table or List Cards -->
+      <div class="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-800/80 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-700/80">
+              <tr>
+                <th scope="col" class="py-3 px-4">日期</th>
+                <th scope="col" class="py-3 px-4">類別</th>
+                <th scope="col" class="py-3 px-4">里程 (km)</th>
+                <th scope="col" class="py-3 px-4">項目 / 內容</th>
+                <th scope="col" class="py-3 px-4 text-right">費用 (NT$)</th>
+                <th scope="col" class="py-3 px-4">地點 / 備註</th>
+                <th scope="col" class="py-3 px-4 text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody id="records-table-body" class="divide-y divide-slate-800">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div id="records-empty-state" class="hidden p-12 text-center text-slate-500">
+          <i class="fa-regular fa-folder-open text-4xl mb-3"></i>
+          <p class="text-sm">尚未有符合條件的記錄，點擊上方「記一筆」新增吧！</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Fuel & Efficiency (加油與油耗) -->
+    <div id="tab-content-fuel" class="tab-pane hidden flex flex-col gap-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">加油紀錄與油耗統計</h2>
+          <p class="text-xs text-slate-400 mt-0.5">每次加油時「加滿跳停」，自動計算每公升油耗與每公里成本</p>
+        </div>
+        <button id="btn-quick-fuel" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-gas-pump"></i> 新增加油紀錄
+        </button>
+      </div>
+
+      <!-- Fuel Stats Overview Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">平均油耗 (km/L)</span>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="fuel-stat-avg-kml" class="text-2xl font-black font-mono text-emerald-400">38.5</span>
+            <span class="text-xs text-slate-400">km/L</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">依連續加滿紀錄計算</p>
+        </div>
+
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">每公里油資</span>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="fuel-stat-cost-km" class="text-2xl font-black font-mono text-sky-400">0.82</span>
+            <span class="text-xs text-slate-400">元/km</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">目前平均油費負擔</p>
+        </div>
+
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">累計加油量</span>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="fuel-stat-total-liters" class="text-2xl font-black font-mono text-white">334.2</span>
+            <span class="text-xs text-slate-400">L</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">總消耗汽油公升</p>
+        </div>
+
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">累計加油金額</span>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span class="text-xs text-slate-400">NT$</span>
+            <span id="fuel-stat-total-cost" class="text-2xl font-black font-mono text-white">10,540</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">總加油開銷</p>
+        </div>
+      </div>
+
+      <!-- Fuel History Table -->
+      <div class="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+          <h3 class="font-bold text-sm text-slate-200">加油明細表</h3>
+          <span class="text-xs text-slate-400">建議每次加滿以獲得準確油耗</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-800/80 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-700/80">
+              <tr>
+                <th scope="col" class="py-3 px-4">加油日期</th>
+                <th scope="col" class="py-3 px-4">當時里程</th>
+                <th scope="col" class="py-3 px-4">區間行駛</th>
+                <th scope="col" class="py-3 px-4">加油量 (L)</th>
+                <th scope="col" class="py-3 px-4">單價 (元)</th>
+                <th scope="col" class="py-3 px-4 text-right">總金額</th>
+                <th scope="col" class="py-3 px-4 text-center">單次油耗</th>
+                <th scope="col" class="py-3 px-4">油站 / 備註</th>
+              </tr>
+            </thead>
+            <tbody id="fuel-table-body" class="divide-y divide-slate-800">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Cost Analytics & Charts (費用分析與統計) -->
+    <div id="tab-content-stats" class="tab-pane hidden flex flex-col gap-6">
+      <div>
+        <h2 class="text-xl font-bold text-white">養車費用深度分析</h2>
+        <p class="text-xs text-slate-400 mt-0.5">全方位掌握每月開銷、各項保養與支出結構</p>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Monthly Spending Trend (Bar Chart) -->
+        <div class="lg:col-span-2 bg-slate-850 border border-slate-800 rounded-2xl p-5 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-emerald-400"></i> 每月花費趨勢
+            </h3>
+            <span class="text-xs text-slate-400">近 6 個月 (NT$)</span>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="monthlyCostChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Expense Category Distribution (Doughnut Chart) -->
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-5 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-sky-400"></i> 支出類別佔比
+            </h3>
+            <span class="text-xs text-slate-400">總累計</span>
+          </div>
+          <div class="relative h-72 w-full flex items-center justify-center">
+            <canvas id="categoryPieChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Breakdown Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">保養維修支出</span>
+          <div class="mt-2 text-xl font-bold font-mono text-emerald-400" id="stat-maintenance-cost">NT$ 5,880</div>
+          <span class="text-[11px] text-slate-500" id="stat-maintenance-count">共 5 次更換保養</span>
+        </div>
+
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">加油燃料費</span>
+          <div class="mt-2 text-xl font-bold font-mono text-sky-400" id="stat-fuel-cost">NT$ 10,540</div>
+          <span class="text-[11px] text-slate-500" id="stat-fuel-count">共 24 次加油</span>
+        </div>
+
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">稅金與保險</span>
+          <div class="mt-2 text-xl font-bold font-mono text-indigo-400" id="stat-tax-cost">NT$ 0</div>
+          <span class="text-[11px] text-slate-500" id="stat-tax-count">牌照稅/強制險等</span>
+        </div>
+
+        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
+          <span class="text-xs text-slate-400">平均每公里總用車成本</span>
+          <div class="mt-2 text-xl font-bold font-mono text-amber-400" id="stat-cost-per-km">1.28 元/km</div>
+          <span class="text-[11px] text-slate-500">含油資與全額耗材</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Quick Update Mileage Modal -->
+  <div id="modal-mileage" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-gauge-simple text-emerald-400"></i> 更新目前里程
+        </h3>
+        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-mileage" class="flex flex-col gap-4">
+        <div>
+          <label for="input-new-mileage" class="block text-xs font-semibold text-slate-300 mb-1">最新總里程數 (km)</label>
+          <div class="relative">
+            <input type="number" id="input-new-mileage" min="0" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 text-lg font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <span class="absolute right-4 top-3 text-slate-500 text-sm font-semibold">km</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">目前系統登記為 <span id="current-mileage-label" class="font-mono text-emerald-400 font-bold">12,850</span> km</p>
+        </div>
+        <div class="flex justify-end gap-3 mt-2">
+          <button type="button" class="modal-close px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition">取消</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md shadow-emerald-600/30 transition">確認儲存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Add / Edit Record Modal (記一筆) -->
+  <div id="modal-record" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl my-8">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="record-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-pen-nib text-emerald-400"></i> 新增用車紀錄
+        </h3>
+        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="form-record" class="flex flex-col gap-4">
+        <input type="hidden" id="record-edit-id">
+
+        <!-- Type Selector Tabs -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">記錄類別</label>
+          <div class="grid grid-cols-4 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="record-type" value="maintenance" checked class="peer sr-only">
+              <div class="py-2 text-center rounded-xl bg-slate-700/60 peer-checked:bg-emerald-600 peer-checked:text-white text-slate-300 text-xs font-bold border border-slate-600 peer-checked:border-emerald-500 transition">
+                保養維修
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="record-type" value="fuel" class="peer sr-only">
+              <div class="py-2 text-center rounded-xl bg-slate-700/60 peer-checked:bg-sky-600 peer-checked:text-white text-slate-300 text-xs font-bold border border-slate-600 peer-checked:border-sky-500 transition">
+                加油
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="record-type" value="tax" class="peer sr-only">
+              <div class="py-2 text-center rounded-xl bg-slate-700/60 peer-checked:bg-indigo-600 peer-checked:text-white text-slate-300 text-xs font-bold border border-slate-600 peer-checked:border-indigo-500 transition">
+                稅金保險
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="record-type" value="other" class="peer sr-only">
+              <div class="py-2 text-center rounded-xl bg-slate-700/60 peer-checked:bg-amber-600 peer-checked:text-white text-slate-300 text-xs font-bold border border-slate-600 peer-checked:border-amber-500 transition">
+                改裝其他
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Date & Mileage -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="record-input-date" class="block text-xs font-semibold text-slate-300 mb-1">日期</label>
+            <input type="date" id="record-input-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label for="record-input-mileage" class="block text-xs font-semibold text-slate-300 mb-1">當時里程數 (km)</label>
+            <input type="number" id="record-input-mileage" min="0" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Specific for Maintenance: Associated Items -->
+        <div id="section-maintenance-items" class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
+          <label class="block text-xs font-semibold text-emerald-400 mb-1.5 flex items-center justify-between">
+            <span>關聯保養項目 (儲存時將自動重設該項目下次里程)</span>
+          </label>
+          <div id="record-maintenance-checkboxes" class="grid grid-cols-2 gap-2 text-xs text-slate-300 max-h-36 overflow-y-auto custom-scrollbar p-1">
+            <!-- Dynamic checkboxes -->
+          </div>
+        </div>
+
+        <!-- Specific for Fuel: Liters & Unit Price -->
+        <div id="section-fuel-inputs" class="hidden bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
+          <div class="grid grid-cols-2 gap-3 mb-2">
+            <div>
+              <label for="fuel-input-liters" class="block text-xs font-semibold text-sky-400 mb-1">加油公升數 (L)</label>
+              <input type="number" id="fuel-input-liters" step="0.01" min="0" placeholder="例如: 5.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+            <div>
+              <label for="fuel-input-unit-price" class="block text-xs font-semibold text-sky-400 mb-1">每公升油價 (元)</label>
+              <input type="number" id="fuel-input-unit-price" step="0.1" min="0" placeholder="例如: 31.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="fuel-input-full" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 bg-slate-800 border-slate-700">
+            <label for="fuel-input-full" class="text-xs text-slate-300 font-medium">本次有加滿跳停 (用於油耗計算)</label>
+          </div>
+        </div>
+
+        <!-- Title / Description -->
+        <div>
+          <label for="record-input-title" class="block text-xs font-semibold text-slate-300 mb-1">名稱 / 項目摘要</label>
+          <input type="text" id="record-input-title" required placeholder="例如: 1.2萬公里大保養 (機油+齒輪油+空濾)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <!-- Amount & Vendor -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="record-input-amount" class="block text-xs font-semibold text-slate-300 mb-1">花費金額 (NT$)</label>
+            <input type="number" id="record-input-amount" min="0" required placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label for="record-input-vendor" class="block text-xs font-semibold text-slate-300 mb-1">保養店家 / 加油站</label>
+            <input type="text" id="record-input-vendor" placeholder="例如: SYM 益民車業 / 中油中和站" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label for="record-input-notes" class="block text-xs font-semibold text-slate-300 mb-1">備註說明 (選填)</label>
+          <textarea id="record-input-notes" rows="2" placeholder="備註使用的機油番號、保固期限或零件料號..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-2">
+          <button type="button" class="modal-close px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition">取消</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md shadow-emerald-600/30 transition">儲存記錄</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Add / Edit Maintenance Item Modal -->
+  <div id="modal-item" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="item-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-screwdriver text-emerald-400"></i> 設定保養項目
+        </h3>
+        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="form-item" class="flex flex-col gap-4">
+        <input type="hidden" id="item-edit-id">
+
+        <div>
+          <label for="item-input-name" class="block text-xs font-semibold text-slate-300 mb-1">保養項目名稱</label>
+          <input type="text" id="item-input-name" required placeholder="例如: 機油更換、變速箱油、輪胎" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="item-input-interval-km" class="block text-xs font-semibold text-slate-300 mb-1">週期里程 (km)</label>
+            <input type="number" id="item-input-interval-km" min="100" required placeholder="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label for="item-input-interval-months" class="block text-xs font-semibold text-slate-300 mb-1">週期月數 (月)</label>
+            <input type="number" id="item-input-interval-months" min="1" value="6" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="item-input-last-km" class="block text-xs font-semibold text-slate-300 mb-1">上次更換里程 (km)</label>
+            <input type="number" id="item-input-last-km" min="0" required placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label for="item-input-last-date" class="block text-xs font-semibold text-slate-300 mb-1">上次更換日期</label>
+            <input type="date" id="item-input-last-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label for="item-input-notes" class="block text-xs font-semibold text-slate-300 mb-1">規格或備註說明</label>
+          <input type="text" id="item-input-notes" placeholder="例如: 10W-40 全合成 / 原廠空氣濾芯" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="flex justify-end gap-3 mt-2">
+          <button type="button" class="modal-close px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition">取消</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md shadow-emerald-600/30 transition">儲存項目</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Vehicle Management Modal -->
+  <div id="modal-vehicle" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="vehicle-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-car-side text-emerald-400"></i> 新增 / 編輯車輛
+        </h3>
+        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="form-vehicle" class="flex flex-col gap-4">
+        <input type="hidden" id="vehicle-edit-id">
+
+        <div>
+          <label for="vehicle-input-name" class="block text-xs font-semibold text-slate-300 mb-1">車輛名稱 / 型號</label>
+          <input type="text" id="vehicle-input-name" required placeholder="例如: SYM DRG BT 158 / Toyota RAV4" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="vehicle-input-plate" class="block text-xs font-semibold text-slate-300 mb-1">車牌號碼</label>
+            <input type="text" id="vehicle-input-plate" required placeholder="例如: MBQ-8899" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm uppercase font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label for="vehicle-input-type" class="block text-xs font-semibold text-slate-300 mb-1">車輛類型</label>
+            <select id="vehicle-input-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="moto">機車 / 重機</option>
+              <option value="car">汽車 / 休旅車</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="vehicle-input-mileage" class="block text-xs font-semibold text-slate-300 mb-1">目前總里程 (km)</label>
+            <input type="number" id="vehicle-input-mileage" min="0" required placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label for="vehicle-input-year" class="block text-xs font-semibold text-slate-300 mb-1">出廠年份 (年)</label>
+            <input type="number" id="vehicle-input-year" min="1990" max="2035" value="2023" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label for="vehicle-input-notes" class="block text-xs font-semibold text-slate-300 mb-1">自訂備註</label>
+          <input type="text" id="vehicle-input-notes" placeholder="例如: 家用休旅、日常通勤" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="flex justify-between items-center mt-2">
+          <button type="button" id="btn-delete-vehicle" class="hidden px-3 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 text-xs font-medium transition">
+            刪除此車
+          </button>
+          <div class="flex gap-3 ml-auto">
+            <button type="button" class="modal-close px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition">取消</button>
+            <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md shadow-emerald-600/30 transition">儲存車輛</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Backup & Export Modal -->
+  <div id="modal-backup" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-database text-sky-400"></i> 資料備份與匯出
+        </h3>
+        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-400 mb-4">
+        本系統所有用車紀錄與保養提醒皆儲存於您的瀏覽器本機 (LocalStorage)，永不上傳第三方伺服器。您可以隨時匯出備份或轉移至其他手機與裝置！
+      </p>
+
+      <div class="flex flex-col gap-3">
+        <!-- Export JSON -->
+        <button id="btn-export-json" class="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 hover:bg-slate-750 border border-slate-700 text-slate-200 text-sm font-medium transition">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <i class="fa-solid fa-file-code"></i>
+            </div>
+            <div class="text-left">
+              <span class="font-bold text-white block">匯出 JSON 備份檔</span>
+              <span class="text-xs text-slate-400">包含所有車輛、項目與完整紀錄</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-download text-slate-400"></i>
+        </button>
+
+        <!-- Export CSV -->
+        <button id="btn-export-csv" class="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 hover:bg-slate-750 border border-slate-700 text-slate-200 text-sm font-medium transition">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+              <i class="fa-solid fa-file-csv"></i>
+            </div>
+            <div class="text-left">
+              <span class="font-bold text-white block">匯出 Excel / CSV 表格</span>
+              <span class="text-xs text-slate-400">適合在試算表中開啟與分析</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-file-arrow-down text-slate-400"></i>
+        </button>
+
+        <!-- Import JSON -->
+        <div class="relative">
+          <input type="file" id="input-import-file" accept=".json" class="hidden">
+          <button id="btn-trigger-import" class="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-900 hover:bg-slate-750 border border-slate-700 text-slate-200 text-sm font-medium transition">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <i class="fa-solid fa-file-import"></i>
+              </div>
+              <div class="text-left">
+                <span class="font-bold text-white block">匯入 JSON 備份檔</span>
+                <span class="text-xs text-slate-400">將備份檔還原至目前瀏覽器</span>
+              </div>
+            </div>
+            <i class="fa-solid fa-upload text-slate-400"></i>
+          </button>
+        </div>
+
+        <!-- Reset Sample Data -->
+        <button id="btn-reset-demo" class="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 border border-slate-700 hover:border-rose-800 text-slate-300 text-sm font-medium transition">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+              <i class="fa-solid fa-rotate-left"></i>
+            </div>
+            <div class="text-left">
+              <span class="font-bold text-rose-300 block">重設為示範資料</span>
+              <span class="text-xs text-slate-400">清空並載入預設 DRG 與 RAV4 示範數據</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-arrow-rotate-right text-rose-400"></i>
+        </button>
+      </div>
+
+      <div class="flex justify-end mt-4">
+        <button type="button" class="modal-close px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 border-t border-slate-800/80 py-6 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+        <span>CarTracker • 汽機車保養紀錄</span>
+      </div>
+      <div>
+        <span>支援手機加入主畫面 (PWA) 隨開隨用</span>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

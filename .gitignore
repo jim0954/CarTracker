@@ -1,0 +1,12 @@
+# 本機工具設定
+.claude/
+.vscode/
+node_modules/
+
+# clasp 登入憑證（不可上傳）
+.clasprc.json
+
+# 系統檔
+.DS_Store
+Thumbs.db
+desktop.ini

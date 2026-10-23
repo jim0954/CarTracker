@@ -46,6 +46,7 @@ const TABLES = {
       ['lastDate', '上次日期', 'date'],
       ['dueDate', '預計到期日', 'date'],
       ['calendarEventId', '日曆事件ID', 'text'],
+      ['notified', '已提醒', 'text'],
       ['notes', '備註', 'text'],
       ['updatedAt', '更新時間', 'datetime']
     ]

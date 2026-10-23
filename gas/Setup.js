@@ -69,8 +69,9 @@ function setup() {
     }]);
   }
 
-  // 建立保養提醒日曆
+  // 建立保養提醒日曆、安裝每日排程
   getCalendar_();
+  installTriggers_();
 
   SpreadsheetApp.getActive().toast('CarTracker 初始化完成', 'CarTracker', 5);
 }

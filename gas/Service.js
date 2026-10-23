@@ -42,7 +42,7 @@ function vehicleToClient_(row) {
 }
 
 function itemToClient_(row) {
-  const { updatedAt, calendarEventId, ...item } = stripPrivate_(row);
+  const { updatedAt, calendarEventId, notified, ...item } = stripPrivate_(row);
   return item;
 }
 

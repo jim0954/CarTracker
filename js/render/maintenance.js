@@ -52,7 +52,7 @@ function itemStatus(vehicle, item) {
 
   let status = 'normal'; // 'normal' | 'due-soon' | 'overdue'
   if (remainingKm <= 0 || diffDays <= 0) status = 'overdue';
-  else if (remainingKm <= 500 || diffDays <= 14 || progress >= 85) status = 'due-soon';
+  else if (remainingKm <= 500 || diffDays <= 14) status = 'due-soon';
 
   // 逾期時以已超過的條件顯示，否則以較接近的條件顯示
   const kmCloser = hasKm && (!hasMonths || remainingKm <= 0 || (diffDays > 0 && remainingKm / item.intervalKm <= diffDays / (item.intervalMonths * 30)));

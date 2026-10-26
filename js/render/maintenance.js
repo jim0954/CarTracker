@@ -92,7 +92,9 @@ export function itemHistory(item, records) {
 function itemRow(vehicle, item, info, historyCount) {
   const style = STATUS_STYLE[info.status];
   const calUrl = calendarUrl(vehicle, item, info.nextDate, info.nextMileage);
-  const btn = 'px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white whitespace-nowrap transition';
+  // 操作按鈕等寬排成一列，圖示在上、文字在下
+  const btn = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition';
+  const grey = 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white';
 
   const row = document.createElement('details');
   row.className = 'record-row';
@@ -114,12 +116,12 @@ function itemRow(vehicle, item, info, historyCount) {
       <p>週期：${escapeHtml(info.intervalText)}</p>
       ${info.nextMileage !== null ? `<p>建議保養里程：<span class="font-mono text-slate-300">${formatNumber(info.nextMileage)} km</span></p>` : ''}
       ${item.dueDate ? `<p>預計到期日：<span class="font-mono text-slate-300">${escapeHtml(item.dueDate)}</span></p>` : ''}
-      <div class="flex flex-wrap gap-1.5 pt-2 -ml-5">
-        <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-2.5 py-1.5 whitespace-nowrap rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition"><i class="fa-solid fa-plus mr-1"></i>新增</button>
-        <button data-action="item-history" data-id="${escapeHtml(item.id)}" class="${btn}"><i class="fa-solid fa-clock-rotate-left mr-1"></i>歷史 ${historyCount}</button>
-        <button data-action="edit-item" data-id="${escapeHtml(item.id)}" class="${btn}"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
-        ${calUrl ? `<a href="${escapeHtml(calUrl)}" target="_blank" rel="noopener" class="${btn}" title="加入 Google 日曆"><i class="fa-regular fa-calendar-plus"></i></a>` : ''}
-        <button data-action="delete-item" data-id="${escapeHtml(item.id)}" class="${btn} hover:text-rose-400" title="刪除項目"><i class="fa-solid fa-trash-can"></i></button>
+      <div class="flex gap-1.5 pt-2 -ml-5">
+        <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="${btn} bg-emerald-600 hover:bg-emerald-500 text-white font-bold"><i class="fa-solid fa-plus"></i>新增</button>
+        <button data-action="item-history" data-id="${escapeHtml(item.id)}" class="${btn} ${grey}"><i class="fa-solid fa-clock-rotate-left"></i>歷史 ${historyCount}</button>
+        <button data-action="edit-item" data-id="${escapeHtml(item.id)}" class="${btn} ${grey}"><i class="fa-solid fa-pen"></i>編輯</button>
+        ${calUrl ? `<a href="${escapeHtml(calUrl)}" target="_blank" rel="noopener" class="${btn} ${grey}" title="加入 Google 日曆"><i class="fa-regular fa-calendar-plus"></i>日曆</a>` : ''}
+        <button data-action="delete-item" data-id="${escapeHtml(item.id)}" class="${btn} ${grey} hover:text-rose-400" title="刪除項目"><i class="fa-solid fa-trash-can"></i>刪除</button>
       </div>
     </div>
   `;

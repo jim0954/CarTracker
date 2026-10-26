@@ -25,6 +25,15 @@
 
 雲端模式的設定步驟請看 **[docs/SETUP.md](docs/SETUP.md)**。
 
+## 想自己架一套？
+線上版只開放給管理者加入「成員」名單的帳號，其他人登入會顯示「尚未開通」。
+想自己使用的話：
+1. Fork 這個專案，並在 fork 的 repo 開啟 GitHub Pages（Settings → Pages → 部署 `main` 分支根目錄）
+2. 用你自己的 Google 帳號完整走一次 [docs/SETUP.md](docs/SETUP.md)
+3. 把你的 Apps Script 網址與 OAuth 用戶端 ID 填入 `js/config.js`
+
+完成後就是一套獨立的系統：資料存在你自己的 Google 試算表，與線上版互不相通。
+
 ## 架構
 ```
 瀏覽器（GitHub Pages）── Google 登入取得 ID Token
@@ -61,8 +70,9 @@ docs/SETUP.md         Google 端設定教學
 ES 模組無法用 `file://` 直接開啟，需要啟動本機伺服器：
 
 ```bash
-npx serve .
+npx serve . -l 5173
 ```
+用瀏覽器開啟 `http://localhost:5173`（雲端模式的 Google 登入只接受 SETUP.md 步驟 5 授權過的網址）。
 
 後台單元測試（不需要 Google 帳號）：
 

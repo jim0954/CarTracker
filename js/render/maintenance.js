@@ -28,142 +28,99 @@ function calendarUrl(vehicle, item, fallbackDate, nextMileage) {
   return `https://calendar.google.com/calendar/render?${params}`;
 }
 
+// 依里程與月數推算狀態；週期可只設其中一個（0 或空白代表不看該條件）
+function itemStatus(vehicle, item) {
+  const hasKm = Number(item.intervalKm) > 0;
+  const hasMonths = Number(item.intervalMonths) > 0 && !!item.lastDate;
+
+  const nextMileage = hasKm ? item.lastKm + Number(item.intervalKm) : null;
+  const remainingKm = hasKm ? nextMileage - vehicle.currentMileage : Infinity;
+  const kmPercent = hasKm ? ((vehicle.currentMileage - item.lastKm) / item.intervalKm) * 100 : 0;
+
+  let nextDate = null;
+  let diffDays = Infinity;
+  let timePercent = 0;
+  if (hasMonths) {
+    const lastDate = new Date(item.lastDate);
+    nextDate = new Date(lastDate);
+    nextDate.setMonth(nextDate.getMonth() + Number(item.intervalMonths));
+    const today = new Date();
+    diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+    timePercent = ((today - lastDate) / (nextDate - lastDate)) * 100;
+  }
+  const progress = Math.min(100, Math.max(0, kmPercent, timePercent));
+
+  let status = 'normal'; // 'normal' | 'due-soon' | 'overdue'
+  if (remainingKm <= 0 || diffDays <= 0) status = 'overdue';
+  else if (remainingKm <= 500 || diffDays <= 14 || progress >= 85) status = 'due-soon';
+
+  // 逾期時以已超過的條件顯示，否則以較接近的條件顯示
+  const kmCloser = hasKm && (!hasMonths || remainingKm <= 0 || (diffDays > 0 && remainingKm / item.intervalKm <= diffDays / (item.intervalMonths * 30)));
+  const prefix = status === 'overdue' ? '逾期' : '剩';
+  const remainText = !hasKm && !hasMonths ? '未設定週期'
+    : kmCloser ? `${prefix} ${formatNumber(Math.abs(remainingKm))} km`
+    : `${prefix} ${formatNumber(Math.abs(diffDays))} 天`;
+  const intervalText = [hasKm ? `每 ${formatNumber(item.intervalKm)} km` : '', Number(item.intervalMonths) > 0 ? `${item.intervalMonths} 個月` : '']
+    .filter(Boolean).join(' / ') || '未設定週期';
+
+  return { status, progress, nextMileage, nextDate, remainText, intervalText };
+}
+
+const STATUS_STYLE = {
+  overdue: { text: 'text-rose-400', bar: 'bg-rose-500', dot: 'bg-rose-500 animate-pulse', rank: 0 },
+  'due-soon': { text: 'text-amber-400', bar: 'bg-amber-500', dot: 'bg-amber-500', rank: 1 },
+  normal: { text: 'text-emerald-400', bar: 'bg-emerald-500', dot: 'bg-emerald-500', rank: 2 }
+};
+
+// 一個項目一列：名稱、剩餘量、進度條與上次更換；點一下展開詳細資料與操作
+function itemRow(vehicle, item, info) {
+  const style = STATUS_STYLE[info.status];
+  const calUrl = calendarUrl(vehicle, item, info.nextDate, info.nextMileage);
+  const btn = 'px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition';
+
+  const row = document.createElement('details');
+  row.className = 'record-row';
+  row.innerHTML = `
+    <summary class="list-none px-4 py-3 cursor-pointer hover:bg-slate-800/40 transition">
+      <div class="flex items-center gap-2.5">
+        <span class="w-2.5 h-2.5 shrink-0 rounded-full ${style.dot}"></span>
+        <span class="font-semibold text-white truncate flex-1">${escapeHtml(item.name)}</span>
+        <span class="shrink-0 text-xs font-bold ${style.text}">${escapeHtml(info.remainText)}</span>
+        <i class="record-chevron fa-solid fa-chevron-down text-[10px] text-slate-600 transition-transform"></i>
+      </div>
+      <div class="ml-5 mt-2 mr-5 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+        <div class="${style.bar} h-1.5 rounded-full" style="width: ${info.progress}%"></div>
+      </div>
+      <div class="ml-5 mt-1.5 text-[11px] text-slate-500 font-mono">上次 ${formatNumber(item.lastKm)} km · ${escapeHtml(item.lastDate) || '未填'}</div>
+    </summary>
+    <div class="px-4 pb-3 pl-9 text-xs text-slate-400 space-y-1">
+      ${item.notes ? `<p class="text-slate-300">${escapeHtml(item.notes)}</p>` : ''}
+      <p>週期：${escapeHtml(info.intervalText)}</p>
+      ${info.nextMileage !== null ? `<p>建議保養里程：<span class="font-mono text-slate-300">${formatNumber(info.nextMileage)} km</span></p>` : ''}
+      ${item.dueDate ? `<p>預計到期日：<span class="font-mono text-slate-300">${escapeHtml(item.dueDate)}</span></p>` : ''}
+      <div class="flex flex-wrap gap-2 pt-2">
+        <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition"><i class="fa-solid fa-check-double mr-1"></i>記錄更換</button>
+        <button data-action="edit-item" data-id="${escapeHtml(item.id)}" class="${btn}"><i class="fa-solid fa-gear mr-1"></i>設定</button>
+        ${calUrl ? `<a href="${escapeHtml(calUrl)}" target="_blank" rel="noopener" class="${btn}" title="加入 Google 日曆"><i class="fa-regular fa-calendar-plus"></i></a>` : ''}
+        <button data-action="delete-item" data-id="${escapeHtml(item.id)}" class="${btn} hover:text-rose-400" title="刪除項目"><i class="fa-solid fa-trash-can"></i></button>
+      </div>
+    </div>
+  `;
+  return row;
+}
+
 export function renderMaintenanceTab(vehicle) {
   const container = document.getElementById('maintenance-items-grid');
   container.innerHTML = '';
 
-  const items = store.getItems(vehicle.id);
-  let alertCount = 0;
+  // 需要注意的排前面，同狀態依進度由高到低
+  const rows = store.getItems(vehicle.id)
+    .map(item => ({ item, info: itemStatus(vehicle, item) }))
+    .sort((a, b) => STATUS_STYLE[a.info.status].rank - STATUS_STYLE[b.info.status].rank || b.info.progress - a.info.progress);
+  const alertCount = rows.filter(r => r.info.status !== 'normal').length;
 
-  items.forEach(item => {
-    // 週期可只設里程或只設月數（0 或空白代表不看該條件）
-    const hasKm = Number(item.intervalKm) > 0;
-    const hasMonths = Number(item.intervalMonths) > 0 && !!item.lastDate;
-
-    const nextMileage = hasKm ? item.lastKm + Number(item.intervalKm) : null;
-    const remainingKm = hasKm ? nextMileage - vehicle.currentMileage : Infinity;
-    const kmPercent = hasKm ? ((vehicle.currentMileage - item.lastKm) / item.intervalKm) * 100 : 0;
-
-    // Date calculations
-    let nextDateObj = null;
-    let diffDays = Infinity;
-    let timePercent = 0;
-    if (hasMonths) {
-      const lastDateObj = new Date(item.lastDate);
-      nextDateObj = new Date(lastDateObj);
-      nextDateObj.setMonth(nextDateObj.getMonth() + Number(item.intervalMonths));
-      const today = new Date();
-      diffDays = Math.ceil((nextDateObj - today) / (1000 * 60 * 60 * 24));
-      timePercent = ((today - lastDateObj) / (nextDateObj - lastDateObj)) * 100;
-    }
-    const progressPercent = Math.min(100, Math.max(0, kmPercent, timePercent));
-
-    // Health Status Logic
-    let status = 'normal'; // 'normal' | 'due-soon' | 'overdue'
-    if (remainingKm <= 0 || diffDays <= 0) {
-      status = 'overdue';
-      alertCount++;
-    } else if (remainingKm <= 500 || diffDays <= 14 || progressPercent >= 85) {
-      status = 'due-soon';
-      alertCount++;
-    }
-
-    // 標籤文字：逾期時以已超過的條件顯示，否則以較接近的條件顯示
-    const overByKm = remainingKm <= 0;
-    const kmCloser = hasKm && (!hasMonths || overByKm || (diffDays > 0 && remainingKm / item.intervalKm <= diffDays / (item.intervalMonths * 30)));
-    const remainText = !hasKm && !hasMonths ? '未設定週期'
-      : kmCloser ? `${status === 'overdue' ? '超過' : '剩'} ${formatNumber(Math.abs(remainingKm))} km`
-      : `${status === 'overdue' ? '超過' : '剩'} ${Math.abs(diffDays)} 天`;
-    const intervalText = [hasKm ? `每 ${formatNumber(item.intervalKm)} km` : '', Number(item.intervalMonths) > 0 ? `${item.intervalMonths} 個月` : '']
-      .filter(Boolean).join(' / ') || '未設定週期';
-    const calUrl = calendarUrl(vehicle, item, nextDateObj, nextMileage);
-
-    const card = document.createElement('div');
-    card.className = `relative bg-slate-850 rounded-2xl p-5 border transition-all duration-200 hover:border-slate-600 flex flex-col justify-between ${
-      status === 'overdue' ? 'border-rose-500/60 shadow-lg shadow-rose-950/20' :
-      status === 'due-soon' ? 'border-amber-500/60 shadow-lg shadow-amber-950/20' :
-      'border-slate-800'
-    }`;
-
-    let badgeHtml = '';
-    let progressColor = 'bg-emerald-500';
-
-    if (status === 'overdue') {
-      badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
-        <i class="fa-solid fa-triangle-exclamation mr-1"></i>已逾期 (${remainText})
-      </span>`;
-      progressColor = 'bg-rose-500';
-    } else if (status === 'due-soon') {
-      badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
-        <i class="fa-solid fa-clock mr-1"></i>即將到期 (${remainText})
-      </span>`;
-      progressColor = 'bg-amber-500';
-    } else {
-      badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-        <i class="fa-solid fa-check mr-1"></i>狀態良好 (${remainText})
-      </span>`;
-      progressColor = 'bg-emerald-500';
-    }
-
-    card.innerHTML = `
-      <div>
-        <div class="flex items-start justify-between gap-2 mb-3">
-          <div>
-            <h4 class="text-base font-bold text-white tracking-tight">${escapeHtml(item.name)}</h4>
-            <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(item.notes) || '一般定期更換'}</p>
-          </div>
-          ${badgeHtml}
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="mt-4 mb-3">
-          <div class="flex justify-between text-xs text-slate-400 mb-1">
-            <span>週期使用進度</span>
-            <span class="font-mono font-bold ${status === 'overdue' ? 'text-rose-400' : 'text-slate-300'}">${Math.round(progressPercent)}%</span>
-          </div>
-          <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-            <div class="${progressColor} h-2.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
-          </div>
-        </div>
-
-        <!-- Data metrics -->
-        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 mt-3">
-          <div>
-            <span class="text-slate-500 block">上次更換里程</span>
-            <span class="font-mono text-slate-300 font-semibold">${formatNumber(item.lastKm)} km</span>
-            <span class="text-[10px] text-slate-500 block">${escapeHtml(item.lastDate) || '未填'}</span>
-          </div>
-          <div>
-            <span class="text-slate-500 block">建議保養里程</span>
-            <span class="font-mono text-slate-300 font-semibold">${nextMileage === null ? '—' : `${formatNumber(nextMileage)} km`}</span>
-            <span class="text-[10px] text-slate-500 block">${escapeHtml(intervalText)}</span>
-          </div>
-        </div>
-        ${item.dueDate ? `<p class="text-[11px] text-slate-400 mt-2"><i class="fa-regular fa-calendar mr-1"></i>預計到期日 <span class="font-mono text-slate-300">${escapeHtml(item.dueDate)}</span></p>` : ''}
-      </div>
-
-      <!-- Card Actions -->
-      <div class="flex items-center justify-between gap-2 mt-5 pt-4 border-t border-slate-800">
-        <div class="flex gap-2">
-          <button data-action="edit-item" data-id="${escapeHtml(item.id)}" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition">
-            <i class="fa-solid fa-gear mr-1"></i>設定
-          </button>
-          <button data-action="delete-item" data-id="${escapeHtml(item.id)}" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="刪除項目">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-          ${calUrl ? `<a href="${escapeHtml(calUrl)}" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-sky-300 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="加入 Google 日曆">
-            <i class="fa-regular fa-calendar-plus"></i>
-          </a>` : ''}
-        </div>
-
-        <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-check-double"></i> 記錄更換
-        </button>
-      </div>
-    `;
-
-    container.appendChild(card);
-  });
+  rows.forEach(({ item, info }) => container.appendChild(itemRow(vehicle, item, info)));
+  container.classList.toggle('hidden', rows.length === 0);
 
   // Update Alert Badges
   document.getElementById('hero-alert-count').textContent = alertCount;

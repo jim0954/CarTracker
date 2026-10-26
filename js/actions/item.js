@@ -1,4 +1,4 @@
-// --- 保養項目：新增 / 編輯 / 刪除 / 新增更換 ---
+// --- 保養項目：新增 / 編輯 / 刪除 / 新增更換紀錄 ---
 import * as store from '../store.js';
 import { showToast, openModal, closeModal, openConfirmModal, todayStr, formatNumber, escapeHtml } from '../utils.js';
 import { renderApp } from '../render/app.js';

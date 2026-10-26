@@ -53,34 +53,39 @@ export function renderFuelTab(vehicle) {
   document.getElementById('fuel-stat-total-liters').textContent = totalLiters.toFixed(1);
   document.getElementById('fuel-stat-total-cost').textContent = formatNumber(totalFuelCost);
 
-  // 一筆一列（新到舊）：日期里程、公升與單價、區間里程；右側金額與油耗；點一下編輯
+  // 一筆一列（新到舊），跟保養頁同樣的樣式：日期與油耗、金額公升里程；點一下展開明細與操作
   const list = document.getElementById('fuel-list');
   list.innerHTML = '';
   document.getElementById('fuel-empty-state').classList.toggle('hidden', fuelRecords.length > 0);
 
+  const btn = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white';
   [...fuelRecords].reverse().forEach(r => {
-    const liters = r.details ? Number(r.details.liters) || 0 : 0;
-    const price = r.details && r.details.pricePerLiter ? r.details.pricePerLiter : '';
+    const d = r.details || {};
+    const liters = Number(d.liters) || 0;
     const info = intervalInfo.get(r.id);
-    const detail = [
-      liters ? `${liters.toFixed(2)} L${price ? ` × $${price}` : ''}` : '',
-      info.dist ? `+${formatNumber(info.dist)} km` : '',
-      r.vendor || ''
-    ].filter(Boolean).join(' · ');
 
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.dataset.action = 'edit-record';
-    row.dataset.id = r.id;
-    row.className = 'w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-slate-800/40 transition';
+    const row = document.createElement('details');
+    row.className = 'record-row';
     row.innerHTML = `
-      <div class="min-w-0 flex-1">
-        <div class="font-mono text-sm text-slate-200">${escapeHtml(formatDate(r.date))} · ${formatNumber(r.mileage)} km</div>
-        <div class="text-xs text-slate-500 truncate mt-0.5">${escapeHtml(detail)}${r.notes ? ` · ${escapeHtml(r.notes)}` : ''}</div>
-      </div>
-      <div class="shrink-0 text-right">
-        <div class="font-mono font-bold text-sm text-slate-200">NT$ ${formatNumber(r.amount)}</div>
-        <div class="text-xs font-mono ${info.kmPerLiter ? 'text-emerald-400' : 'text-slate-600'}">${info.kmPerLiter ? `${info.kmPerLiter} km/L` : (r.details && r.details.isFullTank ? '加滿' : '未加滿')}</div>
+      <summary class="list-none px-4 py-3 cursor-pointer hover:bg-slate-800/40 transition">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2.5 h-2.5 shrink-0 rounded-full ${info.kmPerLiter ? 'bg-sky-500' : 'bg-slate-600'}"></span>
+          <span class="font-semibold text-white font-mono flex-1">${escapeHtml(formatDate(r.date))}</span>
+          <span class="shrink-0 text-xs font-bold ${info.kmPerLiter ? 'text-sky-400' : 'text-slate-500'}">${info.kmPerLiter ? `${info.kmPerLiter} km/L` : '—'}</span>
+          <i class="record-chevron fa-solid fa-chevron-down text-[10px] text-slate-600 transition-transform"></i>
+        </div>
+        <div class="ml-5 mt-1.5 text-[11px] text-slate-500 font-mono">NT$ ${formatNumber(r.amount)} · ${liters.toFixed(2)} L · ${formatNumber(r.mileage)} km</div>
+      </summary>
+      <div class="px-4 pb-3 pl-9 text-xs text-slate-400 space-y-1">
+        ${d.pricePerLiter ? `<p>單價：<span class="font-mono text-slate-300">$${escapeHtml(d.pricePerLiter)} / L</span></p>` : ''}
+        ${info.dist ? `<p>區間行駛：<span class="font-mono text-slate-300">${formatNumber(info.dist)} km</span></p>` : ''}
+        <p>${d.isFullTank ? '加滿跳停' : '未加滿'}</p>
+        ${r.vendor ? `<p>${escapeHtml(r.vendor)}</p>` : ''}
+        ${r.notes ? `<p class="whitespace-pre-line">${escapeHtml(r.notes)}</p>` : ''}
+        <div class="flex gap-1.5 pt-2 -ml-5">
+          <button data-action="edit-record" data-id="${escapeHtml(r.id)}" class="${btn}"><i class="fa-solid fa-pen"></i>編輯</button>
+          <button data-action="delete-record" data-id="${escapeHtml(r.id)}" class="${btn} hover:text-rose-400"><i class="fa-solid fa-trash-can"></i>刪除</button>
+        </div>
       </div>
     `;
     list.appendChild(row);

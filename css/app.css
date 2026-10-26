@@ -16,3 +16,14 @@ body {
 /* 紀錄列表：用 <details> 展開明細，隱藏預設三角形 */
 .record-row > summary::-webkit-details-marker { display: none; }
 .record-row[open] .record-chevron { transform: rotate(180deg); }
+
+/* iOS Safari 的日期欄位有內建最小寬度，會撐出容器；改成跟其他欄位一樣寬並靠左 */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  min-height: 2.5rem;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}

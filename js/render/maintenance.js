@@ -115,7 +115,7 @@ function itemRow(vehicle, item, info, historyCount) {
       ${info.nextMileage !== null ? `<p>建議保養里程：<span class="font-mono text-slate-300">${formatNumber(info.nextMileage)} km</span></p>` : ''}
       ${item.dueDate ? `<p>預計到期日：<span class="font-mono text-slate-300">${escapeHtml(item.dueDate)}</span></p>` : ''}
       <div class="flex flex-wrap gap-1.5 pt-2 -ml-5">
-        <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-2.5 py-1.5 whitespace-nowrap rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition"><i class="fa-solid fa-check-double mr-1"></i>記錄更換</button>
+        <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-2.5 py-1.5 whitespace-nowrap rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition"><i class="fa-solid fa-plus mr-1"></i>新增更換</button>
         <button data-action="item-history" data-id="${escapeHtml(item.id)}" class="${btn}"><i class="fa-solid fa-clock-rotate-left mr-1"></i>歷史 ${historyCount}</button>
         <button data-action="edit-item" data-id="${escapeHtml(item.id)}" class="${btn}"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
         ${calUrl ? `<a href="${escapeHtml(calUrl)}" target="_blank" rel="noopener" class="${btn}" title="加入 Google 日曆"><i class="fa-regular fa-calendar-plus"></i></a>` : ''}

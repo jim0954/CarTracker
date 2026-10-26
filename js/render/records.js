@@ -2,10 +2,57 @@
 import * as store from '../store.js';
 import { formatNumber, formatDate, escapeHtml } from '../utils.js';
 
+const TYPE_STYLE = {
+  maintenance: { label: '保養維修', icon: 'fa-screwdriver-wrench', color: 'bg-emerald-500/15 text-emerald-400' },
+  fuel: { label: '加油', icon: 'fa-gas-pump', color: 'bg-sky-500/15 text-sky-400' },
+  tax: { label: '稅費保險', icon: 'fa-file-invoice-dollar', color: 'bg-indigo-500/15 text-indigo-400' },
+  other: { label: '其他', icon: 'fa-receipt', color: 'bg-amber-500/15 text-amber-400' }
+};
+
+// 列表只顯示重點（店家或標題、日期里程、一行摘要），點一下展開完整備註與操作
+function recordRow(r) {
+  const style = TYPE_STYLE[r.type] || TYPE_STYLE.other;
+  const fuel = r.type === 'fuel' && r.details && r.details.liters
+    ? `${r.details.liters} L @ $${r.details.pricePerLiter}` : '';
+  // 保養有店家時以店家為標題、更換項目為摘要（同愛車99）；其他類型以標題為主
+  const useVendor = r.type === 'maintenance' && r.vendor;
+  const heading = useVendor ? r.vendor : r.title;
+  const summary = useVendor ? r.title : (fuel || r.vendor || '');
+  const noteLines = String(r.notes || '').split('；').map(t => t.trim()).filter(Boolean);
+
+  const row = document.createElement('details');
+  row.className = 'record-row group';
+  row.innerHTML = `
+    <summary class="list-none flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-800/40 transition">
+      <div class="w-9 h-9 shrink-0 rounded-full ${style.color} flex items-center justify-center text-sm" title="${style.label}">
+        <i class="fa-solid ${style.icon}"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-baseline justify-between gap-3">
+          <span class="font-semibold text-white truncate">${escapeHtml(heading) || style.label}</span>
+          <span class="shrink-0 font-mono font-bold text-slate-200 text-sm">NT$ ${formatNumber(r.amount)}</span>
+        </div>
+        <div class="text-xs text-slate-400 font-mono mt-0.5">${escapeHtml(formatDate(r.date))} · ${formatNumber(r.mileage)} km</div>
+        ${summary ? `<div class="text-xs text-slate-500 truncate mt-0.5">${escapeHtml(summary)}</div>` : ''}
+      </div>
+      <i class="record-chevron fa-solid fa-chevron-down text-[10px] text-slate-600 transition-transform"></i>
+    </summary>
+    <div class="px-4 pb-3 pl-16 text-xs text-slate-400 space-y-1">
+      ${useVendor ? `<p class="text-slate-300">${escapeHtml(r.title)}</p>` : ''}
+      ${noteLines.map(t => `<p class="whitespace-pre-line">${escapeHtml(t)}</p>`).join('')}
+      <div class="flex gap-2 pt-2">
+        <button data-action="edit-record" data-id="${escapeHtml(r.id)}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
+        <button data-action="delete-record" data-id="${escapeHtml(r.id)}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition"><i class="fa-solid fa-trash-can mr-1"></i>刪除</button>
+      </div>
+    </div>
+  `;
+  return row;
+}
+
 export function renderRecordsTab(vehicle) {
-  const tbody = document.getElementById('records-table-body');
+  const list = document.getElementById('records-list');
   const emptyState = document.getElementById('records-empty-state');
-  tbody.innerHTML = '';
+  list.innerHTML = '';
 
   const searchKeyword = (document.getElementById('record-search-input').value || '').trim().toLowerCase();
   const filterType = document.getElementById('record-filter-type').value;
@@ -19,7 +66,7 @@ export function renderRecordsTab(vehicle) {
 
   // Apply search filter
   if (searchKeyword) {
-    records = records.filter(r => 
+    records = records.filter(r =>
       (r.title && r.title.toLowerCase().includes(searchKeyword)) ||
       (r.vendor && r.vendor.toLowerCase().includes(searchKeyword)) ||
       (r.notes && r.notes.toLowerCase().includes(searchKeyword))
@@ -35,47 +82,5 @@ export function renderRecordsTab(vehicle) {
   }
   emptyState.classList.add('hidden');
 
-  records.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-800/40 transition';
-
-    let badgeType = '';
-    if (r.type === 'maintenance') {
-      badgeType = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">保養維修</span>';
-    } else if (r.type === 'fuel') {
-      badgeType = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">加油</span>';
-    } else if (r.type === 'tax') {
-      badgeType = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">稅費保險</span>';
-    } else {
-      badgeType = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">其他</span>';
-    }
-
-    let detailExtra = '';
-    if (r.type === 'fuel' && r.details && r.details.liters) {
-      detailExtra = `<span class="text-[10px] text-sky-400 block">${escapeHtml(r.details.liters)} L @ $${escapeHtml(r.details.pricePerLiter)}</span>`;
-    }
-
-    tr.innerHTML = `
-      <td class="py-3 px-4 font-mono text-xs text-slate-300">${escapeHtml(formatDate(r.date))}</td>
-      <td class="py-3 px-4">${badgeType}</td>
-      <td class="py-3 px-4 font-mono text-slate-200">${formatNumber(r.mileage)}</td>
-      <td class="py-3 px-4">
-        <span class="font-medium text-white block">${escapeHtml(r.title)}</span>
-        ${detailExtra}
-      </td>
-      <td class="py-3 px-4 text-right font-mono font-bold text-slate-200">NT$ ${formatNumber(r.amount)}</td>
-      <td class="py-3 px-4 text-xs text-slate-400">
-        <span class="text-slate-300 block">${escapeHtml(r.vendor) || '-'}</span>
-        <span class="text-[11px] text-slate-500">${escapeHtml(r.notes)}</span>
-      </td>
-      <td class="py-3 px-4 text-center">
-        <div class="flex items-center justify-center gap-2">
-          <button data-action="edit-record" data-id="${escapeHtml(r.id)}" class="text-slate-400 hover:text-white p-1 rounded" title="編輯"><i class="fa-solid fa-pen"></i></button>
-          <button data-action="delete-record" data-id="${escapeHtml(r.id)}" class="text-slate-500 hover:text-rose-400 p-1 rounded" title="刪除"><i class="fa-solid fa-trash-can"></i></button>
-        </div>
-      </td>
-    `;
-
-    tbody.appendChild(tr);
-  });
+  records.forEach(r => list.appendChild(recordRow(r)));
 }

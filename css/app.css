@@ -12,3 +12,7 @@ body {
   background: #cbd5e1;
   border-radius: 3px;
 }
+
+/* 紀錄列表：用 <details> 展開明細，隱藏預設三角形 */
+.record-row > summary::-webkit-details-marker { display: none; }
+.record-row[open] .record-chevron { transform: rotate(180deg); }

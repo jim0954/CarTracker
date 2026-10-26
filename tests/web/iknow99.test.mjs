@@ -41,9 +41,12 @@ assert.strictEqual(items['機油'].notes, '10W40');
 assert.strictEqual(items['電瓶'].intervalMonths, 30);
 assert.strictEqual(items['電瓶'].lastDate, '2020-01-02');
 
-// 新車保養週期不轉成紀錄
+// 新車保養週期另存一筆 0 元「牽新車」紀錄
 const records = Object.fromEntries(data.records.map(r => [r.title, r]));
-assert.strictEqual(data.records.length, 3);
+assert.strictEqual(data.records.length, 4);
+assert.strictEqual(records['牽新車（新車保養週期）'].type, 'other');
+assert.strictEqual(records['牽新車（新車保養週期）'].date, '2020-01-02');
+assert.strictEqual(records['牽新車（新車保養週期）'].notes, '愛車99 新車保養週期：機油 每 1000 km / 6 個月、電瓶 每 36 個月、坐墊');
 assert.deepStrictEqual(records['機油、車牌框'].details.itemIds, [items['機油'].id]);
 assert.strictEqual(records['機油、車牌框'].vendor, '好車行');
 assert.strictEqual(records['機油、車牌框'].notes, '機油 10W40 $250；車牌框');

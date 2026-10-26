@@ -54,6 +54,13 @@ function itemNotes(sub) {
   return parts.join(' ');
 }
 
+function intervalText(sub) {
+  const parts = [];
+  if (num(sub.ValidDistance) > 0) parts.push(`${num(sub.ValidDistance)} km`);
+  if (num(sub.LifeTime) > 0) parts.push(`${num(sub.LifeTime)} 個月`);
+  return parts.length ? `${sub.Name} 每 ${parts.join(' / ')}` : sub.Name;
+}
+
 // 加油明細；沒有明細時從列表的 Title（是否加滿,公升,單價,...,油品,距離）解析
 function fuelDetails(form, detail) {
   if (detail && detail.SubForm && !Array.isArray(detail.SubForm)) {
@@ -124,7 +131,16 @@ export function convertIknow99(captures) {
         out.records.push({ ...base, type: 'other', title: f.Title || '其他支出', vendor: '', notes: f.Comment || '', details: {} });
         return;
       }
-      if (f.Title === NEW_CAR_TITLE) return; // 只是週期設定，已轉成保養項目
+      // 週期設定已轉成保養項目；另存一筆 0 元紀錄當作牽新車的日期
+      if (f.Title === NEW_CAR_TITLE) {
+        const subs = d && Array.isArray(d.SubForm) ? d.SubForm : [];
+        out.records.push({
+          ...base, type: 'other', title: '牽新車（新車保養週期）', vendor: '',
+          notes: subs.length ? `愛車99 新車保養週期：${subs.map(intervalText).join('、')}` : '',
+          details: {}
+        });
+        return;
+      }
       if (!d) missingDetails++;
       const subs = d && Array.isArray(d.SubForm) ? d.SubForm : [];
       const notes = subs.map(itemNotes);

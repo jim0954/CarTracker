@@ -52,7 +52,8 @@ function itemStatus(vehicle, item) {
 
   let status = 'normal'; // 'normal' | 'due-soon' | 'overdue'
   if (remainingKm <= 0 || diffDays <= 0) status = 'overdue';
-  else if (remainingKm <= 500 || diffDays <= 14) status = 'due-soon';
+  // 里程門檻：剩 500 km，短週期（例如每 1,000 km 的機油）改為剩週期的 10%
+  else if (remainingKm <= Math.min(500, item.intervalKm * 0.1) || diffDays <= 14) status = 'due-soon';
 
   // 逾期時以已超過的條件顯示，否則以較接近的條件顯示
   const kmCloser = hasKm && (!hasMonths || remainingKm <= 0 || (diffDays > 0 && remainingKm / item.intervalKm <= diffDays / (item.intervalMonths * 30)));

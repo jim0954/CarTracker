@@ -67,6 +67,7 @@ const TABLES = {
       ['pricePerLiter', '單價', 'number'],
       ['isFullTank', '加滿', 'bool'],
       ['itemIds', '保養項目IDs', 'list'],
+      ['parts', '項目明細', 'json'],
       ['notes', '備註', 'text'],
       ['createdAt', '建立時間', 'datetime'],
       ['updatedAt', '更新時間', 'datetime']
@@ -102,6 +103,8 @@ function toSheetValue_(col, value) {
       return col[3][value] || value;
     case 'list':
       return Array.isArray(value) ? value.join(',') : String(value);
+    case 'json':
+      return Array.isArray(value) && value.length === 0 ? '' : JSON.stringify(value);
     case 'datetime':
       return value instanceof Date ? value : new Date(value);
     default:
@@ -122,6 +125,12 @@ function fromSheetValue_(col, value) {
     }
     case 'list':
       return String(value).split(',').map(s => s.trim()).filter(Boolean);
+    case 'json':
+      try {
+        return value === '' || value === null ? [] : JSON.parse(value);
+      } catch (e) {
+        return [];
+      }
     case 'date':
       return value instanceof Date ? formatDate_(value) : String(value);
     case 'datetime':
@@ -140,7 +149,14 @@ function formatDate_(date) {
 // 勾選欄的空白核取方塊值為 FALSE，所以不能用 getLastRow() 判斷資料結尾
 function readTable_(tableKey) {
   const sheet = getSheet_(tableKey);
-  const values = sheet.getDataRange().getValues();
+  let values = sheet.getDataRange().getValues();
+  // 程式新增的欄位自動補上標題，不需要重新執行 setup()
+  const missing = TABLES[tableKey].columns.filter(col => values[0].map(h => String(h).trim()).indexOf(col[1]) === -1);
+  if (missing.length) {
+    sheet.getRange(1, values[0].length + 1, 1, missing.length).setValues([missing.map(col => col[1])])
+      .setFontWeight('bold').setBackground('#e2e8f0');
+    values = sheet.getDataRange().getValues();
+  }
   const headers = values[0].map(h => String(h).trim());
   const columns = TABLES[tableKey].columns
     .map(col => ({ col, index: headers.indexOf(col[1]) }))

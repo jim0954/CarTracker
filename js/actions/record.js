@@ -1,29 +1,94 @@
 // --- 用車紀錄：記一筆 / 編輯 / 刪除 ---
 import * as store from '../store.js';
-import { showToast, openModal, closeModal, openConfirmModal, todayStr, escapeHtml } from '../utils.js';
+import { showToast, openModal, closeModal, openConfirmModal, todayStr } from '../utils.js';
 import { renderApp } from '../render/app.js';
 import { renderRecordsTab } from '../render/records.js';
+import { recordParts } from '../parts.js';
 
-function populateRecordMaintenanceCheckboxes(vehicle, selectedIds = []) {
-  const container = document.getElementById('record-maintenance-checkboxes');
-  container.innerHTML = '';
-  const items = store.getItems(vehicle.id);
+// --- 保養項目明細編輯 ---
+const inputCls = 'bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none';
 
-  if (items.length === 0) {
-    container.innerHTML = '<span class="text-slate-500">尚無自訂保養項目</span>';
-    return;
-  }
+function partRows() {
+  return [...document.querySelectorAll('#record-parts .part-row')];
+}
 
-  items.forEach(it => {
-    const lbl = document.createElement('label');
-    lbl.className = 'flex items-center gap-2 p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 cursor-pointer transition';
-    const isChecked = selectedIds.includes(it.id);
-    lbl.innerHTML = `
-      <input type="checkbox" name="maint-item-check" value="${escapeHtml(it.id)}" ${isChecked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 bg-slate-900 border-slate-700">
-      <span class="truncate">${escapeHtml(it.name)}</span>
-    `;
-    container.appendChild(lbl);
+function readParts() {
+  return partRows()
+    .map(row => ({
+      name: row.querySelector('.part-name').value.trim(),
+      spec: row.querySelector('.part-spec').value.trim(),
+      price: parseFloat(row.querySelector('.part-price').value) || 0
+    }))
+    .filter(p => p.name);
+}
+
+// 項目金額變動時，總額改為各項加總
+function syncAmountFromParts() {
+  const total = readParts().reduce((sum, p) => sum + p.price, 0);
+  if (total > 0) document.getElementById('record-input-amount').value = Math.round(total * 100) / 100;
+}
+
+function refreshChips() {
+  const names = new Set(readParts().map(p => p.name));
+  document.querySelectorAll('#record-item-chips button').forEach(chip => {
+    const active = names.has(chip.dataset.name);
+    chip.className = `px-2.5 py-1 rounded-full text-xs border transition ${active
+      ? 'bg-emerald-600 border-emerald-500 text-white'
+      : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'}`;
   });
+}
+
+function addPartRow(part = {}) {
+  const row = document.createElement('div');
+  row.className = 'part-row bg-slate-800/60 rounded-lg p-2 flex flex-col gap-1.5';
+  row.innerHTML = `
+    <div class="flex gap-1.5">
+      <input type="text" class="part-name ${inputCls} flex-1 min-w-0 text-sm" placeholder="項目名稱">
+      <input type="number" inputmode="decimal" min="0" step="any" class="part-price ${inputCls} w-24 text-sm font-mono" placeholder="金額">
+      <button type="button" class="part-remove px-2 text-slate-500 hover:text-rose-400" title="移除"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <input type="text" class="part-spec ${inputCls} text-xs" placeholder="規格 / 說明（選填）">
+  `;
+  row.querySelector('.part-name').value = part.name || '';
+  row.querySelector('.part-spec').value = part.spec || '';
+  row.querySelector('.part-price').value = part.price ? part.price : '';
+  row.querySelector('.part-remove').addEventListener('click', () => {
+    row.remove();
+    syncAmountFromParts();
+    refreshChips();
+  });
+  row.querySelector('.part-price').addEventListener('input', syncAmountFromParts);
+  row.querySelector('.part-name').addEventListener('input', refreshChips);
+  document.getElementById('record-parts').appendChild(row);
+  return row;
+}
+
+// 點保養項目標籤：未加入就新增一列，已加入就移除
+function toggleItemPart(name) {
+  const existing = partRows().find(row => row.querySelector('.part-name').value.trim() === name);
+  if (existing) {
+    existing.remove();
+    syncAmountFromParts();
+  } else {
+    addPartRow({ name }).querySelector('.part-price').focus();
+  }
+  refreshChips();
+}
+
+function populateParts(vehicle, parts) {
+  const chips = document.getElementById('record-item-chips');
+  chips.innerHTML = '';
+  store.getItems(vehicle.id).forEach(it => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.dataset.name = it.name;
+    chip.textContent = it.name;
+    chip.addEventListener('click', () => toggleItemPart(it.name));
+    chips.appendChild(chip);
+  });
+  document.getElementById('record-parts').innerHTML = '';
+  parts.forEach(p => addPartRow(p));
+  refreshChips();
 }
 
 function toggleRecordTypeSections(type) {
@@ -60,7 +125,8 @@ export function openRecordModalForType(type, prefillTitle = '', prefillItemIds =
   if (radio) radio.checked = true;
   toggleRecordTypeSections(type);
 
-  populateRecordMaintenanceCheckboxes(v, prefillItemIds);
+  const prefillParts = prefillItemIds.map(id => store.getItem(id)).filter(Boolean).map(it => ({ name: it.name }));
+  populateParts(v, prefillParts);
   openModal('modal-record');
 }
 
@@ -76,14 +142,14 @@ export function editRecord(recordId) {
   document.getElementById('record-input-title').value = rec.title;
   document.getElementById('record-input-amount').value = rec.amount;
   document.getElementById('record-input-vendor').value = rec.vendor || '';
-  document.getElementById('record-input-notes').value = rec.notes || '';
+  const { parts, notes } = recordParts(rec);
+  document.getElementById('record-input-notes').value = notes;
 
   const radio = document.querySelector(`input[name="record-type"][value="${rec.type}"]`);
   if (radio) radio.checked = true;
   toggleRecordTypeSections(rec.type);
 
-  const itemIds = rec.details && rec.details.itemIds ? rec.details.itemIds : [];
-  populateRecordMaintenanceCheckboxes(v, itemIds);
+  populateParts(v, parts);
 
   if (rec.type === 'fuel' && rec.details) {
     document.getElementById('fuel-input-liters').value = rec.details.liters || '';
@@ -128,6 +194,9 @@ export function initRecordActions() {
 
   document.getElementById('fuel-input-liters').addEventListener('input', autoCalcGasAmount);
   document.getElementById('fuel-input-unit-price').addEventListener('input', autoCalcGasAmount);
+  document.getElementById('btn-add-part').addEventListener('click', () => {
+    addPartRow().querySelector('.part-name').focus();
+  });
 
   document.getElementById('form-record').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -136,16 +205,16 @@ export function initRecordActions() {
     const type = document.querySelector('input[name="record-type"]:checked').value;
     const date = document.getElementById('record-input-date').value;
     const mileage = parseInt(document.getElementById('record-input-mileage').value, 10);
-    const title = document.getElementById('record-input-title').value.trim();
+    let title = document.getElementById('record-input-title').value.trim();
     const amount = parseFloat(document.getElementById('record-input-amount').value) || 0;
     const vendor = document.getElementById('record-input-vendor').value.trim();
     const notes = document.getElementById('record-input-notes').value.trim();
 
-    const checkedItemIds = [];
-    if (type === 'maintenance') {
-      document.querySelectorAll('input[name="maint-item-check"]:checked').forEach(cb => {
-        checkedItemIds.push(cb.value);
-      });
+    const parts = type === 'maintenance' ? readParts() : [];
+    if (!title) title = parts.map(p => p.name).join('、');
+    if (!title) {
+      showToast('請填寫名稱，或加入至少一個保養項目', 'error');
+      return;
     }
 
     let details = {};
@@ -156,7 +225,10 @@ export function initRecordActions() {
         isFullTank: document.getElementById('fuel-input-full').checked
       };
     } else if (type === 'maintenance') {
-      details = { itemIds: checkedItemIds };
+      // 與保養項目同名的明細，儲存時會更新該項目的上次更換
+      const names = new Set(parts.map(p => p.name));
+      const itemIds = store.getItems(v.id).filter(it => names.has(it.name)).map(it => it.id);
+      details = { itemIds, parts };
     }
 
     if (editId) {

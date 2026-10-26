@@ -62,6 +62,7 @@ js/session.js         登入畫面與使用者選單
 js/render/            各分頁畫面
 js/actions/           各功能的事件處理
 js/iknow99.js         愛車99 資料轉換
+js/parts.js           保養紀錄的項目明細
 gas/                  Google Apps Script 後台程式
 tests/gas/            後台單元測試與本機模擬後台
 tests/web/            前端單元測試
@@ -83,6 +84,7 @@ npx serve . -l 5173
 ```bash
 node tests/gas/run.js
 node tests/web/iknow99.test.mjs
+node tests/web/parts.test.mjs
 ```
 
 更新後台程式（已設定 clasp）：

@@ -49,7 +49,8 @@ assert.strictEqual(records['牽新車（新車保養週期）'].date, '2020-01-0
 assert.strictEqual(records['牽新車（新車保養週期）'].notes, '愛車99 新車保養週期：機油 每 1000 km / 6 個月、電瓶 每 36 個月、坐墊');
 assert.deepStrictEqual(records['機油、車牌框'].details.itemIds, [items['機油'].id]);
 assert.strictEqual(records['機油、車牌框'].vendor, '好車行');
-assert.strictEqual(records['機油、車牌框'].notes, '機油 10W40 $250；車牌框');
+assert.strictEqual(records['機油、車牌框'].notes, '');
+assert.deepStrictEqual(records['機油、車牌框'].details.parts, [{ name: '機油', spec: '10W40', price: 250 }, { name: '車牌框', spec: '', price: 0 }]);
 assert.strictEqual(records['沒點開'].date, '2026-01-01');
 assert.deepStrictEqual(records['加油 95無鉛'].details, { liters: 4, pricePerLiter: 30, isFullTank: true });
 

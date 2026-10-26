@@ -1,6 +1,7 @@
 // --- 分頁 2：用車紀錄 ---
 import * as store from '../store.js';
 import { formatNumber, formatDate, escapeHtml } from '../utils.js';
+import { recordParts } from '../parts.js';
 
 const TYPE_STYLE = {
   maintenance: { label: '保養維修', icon: 'fa-screwdriver-wrench', color: 'bg-emerald-500/15 text-emerald-400' },
@@ -18,7 +19,7 @@ function recordRow(r) {
   const useVendor = r.type === 'maintenance' && r.vendor;
   const heading = useVendor ? r.vendor : r.title;
   const summary = useVendor ? r.title : (fuel || r.vendor || '');
-  const noteLines = String(r.notes || '').split('；').map(t => t.trim()).filter(Boolean);
+  const { parts, notes } = recordParts(r);
 
   const row = document.createElement('details');
   row.className = 'record-row group';
@@ -38,8 +39,15 @@ function recordRow(r) {
       <i class="record-chevron fa-solid fa-chevron-down text-[10px] text-slate-600 transition-transform"></i>
     </summary>
     <div class="px-4 pb-3 pl-16 text-xs text-slate-400 space-y-1">
-      ${useVendor ? `<p class="text-slate-300">${escapeHtml(r.title)}</p>` : ''}
-      ${noteLines.map(t => `<p class="whitespace-pre-line">${escapeHtml(t)}</p>`).join('')}
+      ${parts.length ? `<ul class="divide-y divide-slate-800/80">${parts.map(p => `
+        <li class="flex items-start justify-between gap-3 py-1.5">
+          <div class="min-w-0">
+            <span class="text-slate-200">${escapeHtml(p.name)}</span>
+            ${p.spec ? `<span class="block text-[11px] text-slate-500 whitespace-pre-line">${escapeHtml(p.spec)}</span>` : ''}
+          </div>
+          <span class="shrink-0 font-mono text-slate-300">${p.price ? `$${formatNumber(p.price)}` : ''}</span>
+        </li>`).join('')}</ul>` : (useVendor ? `<p class="text-slate-300">${escapeHtml(r.title)}</p>` : '')}
+      ${notes ? `<p class="whitespace-pre-line">${escapeHtml(notes)}</p>` : ''}
       <div class="flex gap-2 pt-2">
         <button data-action="edit-record" data-id="${escapeHtml(r.id)}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
         <button data-action="delete-record" data-id="${escapeHtml(r.id)}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition"><i class="fa-solid fa-trash-can mr-1"></i>刪除</button>

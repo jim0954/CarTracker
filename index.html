@@ -273,7 +273,7 @@
       <!-- Quick Legend Status Indicators -->
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 px-1">
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>需保養</span>
-        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>即將到期（剩 500 km 或 14 天內）</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>即將到期（剩 14 天或 500 km 內，短週期為 10%）</span>
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>良好</span>
       </div>
 
@@ -549,14 +549,13 @@
           </div>
         </div>
 
-        <!-- Specific for Maintenance: Associated Items -->
+        <!-- Specific for Maintenance: 項目明細（每項各自的規格與金額） -->
         <div id="section-maintenance-items" class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
-          <label class="block text-xs font-semibold text-emerald-400 mb-1.5 flex items-center justify-between">
-            <span>關聯保養項目 (儲存時將自動重設該項目下次里程)</span>
-          </label>
-          <div id="record-maintenance-checkboxes" class="grid grid-cols-2 gap-2 text-xs text-slate-300 max-h-36 overflow-y-auto custom-scrollbar p-1">
-            <!-- Dynamic checkboxes -->
-          </div>
+          <p class="text-xs font-semibold text-emerald-400 mb-1">保養 / 維修項目</p>
+          <p class="text-[11px] text-slate-500 mb-2">點選下方項目加入；與保養項目同名的會自動更新「上次更換」</p>
+          <div id="record-item-chips" class="flex flex-wrap gap-1.5 mb-2"></div>
+          <div id="record-parts" class="flex flex-col gap-2"></div>
+          <button type="button" id="btn-add-part" class="mt-2 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"><i class="fa-solid fa-plus mr-1"></i>其他項目</button>
         </div>
 
         <!-- Specific for Fuel: Liters & Unit Price -->
@@ -580,7 +579,7 @@
         <!-- Title / Description -->
         <div>
           <label for="record-input-title" class="block text-xs font-semibold text-slate-300 mb-1">名稱 / 項目摘要</label>
-          <input type="text" id="record-input-title" required placeholder="例如: 1.2萬公里大保養 (機油+齒輪油+空濾)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          <input type="text" id="record-input-title" placeholder="保養可留空，自動以項目名稱命名" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
         </div>
 
         <!-- Amount & Vendor -->

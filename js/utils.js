@@ -72,8 +72,11 @@ function closeConfirmModal() {
 }
 
 // --- 一般 Modal ---
+// 視窗比畫面高時可捲動；每次開啟都從最上方開始
 export function openModal(modalId) {
-  document.getElementById(modalId).classList.remove('hidden');
+  const modal = document.getElementById(modalId);
+  modal.classList.remove('hidden');
+  modal.scrollTop = 0;
 }
 
 export function closeModal(modalId) {

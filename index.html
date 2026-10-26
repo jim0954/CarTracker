@@ -28,8 +28,8 @@
   <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- Confirmation Modal -->
-  <div id="confirm-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+  <div id="confirm-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl m-auto">
       <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-4" id="confirm-modal-icon">
         <i class="fa-solid fa-triangle-exclamation"></i>
       </div>
@@ -468,8 +468,8 @@
   <!-- ==================== MODALS ==================== -->
 
   <!-- 1. Quick Update Mileage Modal -->
-  <div id="modal-mileage" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+  <div id="modal-mileage" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-gauge-simple text-emerald-400"></i> 更新目前里程
@@ -494,8 +494,8 @@
   </div>
 
   <!-- 2. Add / Edit Record Modal (記一筆) -->
-  <div id="modal-record" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl my-8">
+  <div id="modal-record" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 id="record-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-pen-nib text-emerald-400"></i> 新增用車紀錄
@@ -610,8 +610,8 @@
 
   <!-- 3. Add / Edit Maintenance Item Modal -->
   <!-- 保養項目更換歷史 -->
-  <div id="modal-item-history" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-start sm:items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl my-4">
+  <div id="modal-item-history" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-clock-rotate-left text-emerald-400"></i> <span id="item-history-title">更換歷史</span>
@@ -624,8 +624,8 @@
     </div>
   </div>
 
-  <div id="modal-item" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+  <div id="modal-item" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 id="item-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-screwdriver text-emerald-400"></i> 設定保養項目
@@ -677,8 +677,8 @@
   </div>
 
   <!-- 4. Vehicle Management Modal -->
-  <div id="modal-vehicle" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+  <div id="modal-vehicle" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 id="vehicle-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-car-side text-emerald-400"></i> 新增 / 編輯車輛
@@ -743,8 +743,8 @@
   </div>
 
   <!-- 5. Backup & Export Modal -->
-  <div id="modal-backup" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+  <div id="modal-backup" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-database text-sky-400"></i> 資料備份與匯出

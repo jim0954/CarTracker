@@ -5,7 +5,7 @@ export const CONFIG = {
   // Apps Script 網頁應用程式網址：https://script.google.com/macros/s/xxxx/exec
   GAS_URL: 'https://script.google.com/macros/s/AKfycbyJk2e0x1gkMnyLJIPufuJiW_kNXk_bV8YGS-eyuyeX5Q8K5adpejUlatpQtXZbWn-jNA/exec',
   // Google Cloud OAuth 用戶端 ID：xxxx.apps.googleusercontent.com
-  GOOGLE_CLIENT_ID: ''
+  GOOGLE_CLIENT_ID: '977690170989-p4kg5v1rtferkj25bistpg01mqj8qh3s.apps.googleusercontent.com'
 };
 
 export const isCloudMode = Boolean(CONFIG.GAS_URL && CONFIG.GOOGLE_CLIENT_ID);

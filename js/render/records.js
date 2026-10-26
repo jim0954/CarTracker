@@ -10,6 +10,9 @@ const TYPE_STYLE = {
   other: { label: '其他', icon: 'fa-receipt', color: 'bg-amber-500/15 text-amber-400' }
 };
 
+// 操作按鈕：跟保養頁、加油頁一樣等寬，圖示在上、文字在下
+const BTN = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white';
+
 // 列表只顯示重點（店家或標題、日期里程、一行摘要），點一下展開完整備註與操作
 function recordRow(r) {
   const style = TYPE_STYLE[r.type] || TYPE_STYLE.other;
@@ -48,9 +51,9 @@ function recordRow(r) {
           <span class="shrink-0 font-mono text-slate-300">${p.price ? `$${formatNumber(p.price)}` : ''}</span>
         </li>`).join('')}</ul>` : (useVendor ? `<p class="text-slate-300">${escapeHtml(r.title)}</p>` : '')}
       ${notes ? `<p class="whitespace-pre-line">${escapeHtml(notes)}</p>` : ''}
-      <div class="flex gap-2 pt-2">
-        <button data-action="edit-record" data-id="${escapeHtml(r.id)}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
-        <button data-action="delete-record" data-id="${escapeHtml(r.id)}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition"><i class="fa-solid fa-trash-can mr-1"></i>刪除</button>
+      <div class="flex gap-1.5 pt-2 -ml-12">
+        <button data-action="edit-record" data-id="${escapeHtml(r.id)}" class="${BTN}"><i class="fa-solid fa-pen"></i>編輯</button>
+        <button data-action="delete-record" data-id="${escapeHtml(r.id)}" class="${BTN} hover:text-rose-400"><i class="fa-solid fa-trash-can"></i>刪除</button>
       </div>
     </div>
   `;

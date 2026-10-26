@@ -97,7 +97,7 @@ export function initModals() {
   });
 
   // 點背景關閉
-  ['modal-mileage', 'modal-record', 'modal-item', 'modal-vehicle', 'modal-backup'].forEach(id => {
+  ['modal-mileage', 'modal-record', 'modal-item', 'modal-item-history', 'modal-vehicle', 'modal-backup'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('click', function(e) {
       if (e.target === this) this.classList.add('hidden');

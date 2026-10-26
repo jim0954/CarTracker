@@ -609,6 +609,21 @@
   </div>
 
   <!-- 3. Add / Edit Maintenance Item Modal -->
+  <!-- 保養項目更換歷史 -->
+  <div id="modal-item-history" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl my-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-emerald-400"></i> <span id="item-history-title">更換歷史</span>
+        </h3>
+        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p id="item-history-summary" class="text-xs text-slate-400 mb-2"></p>
+      <ul id="item-history-list" class="divide-y divide-slate-700/80 text-sm"></ul>
+      <p class="text-[11px] text-slate-500 mt-3">點一筆可編輯該次保養紀錄</p>
+    </div>
+  </div>
+
   <div id="modal-item" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
       <div class="flex items-center justify-between mb-4">

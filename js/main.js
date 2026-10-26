@@ -8,7 +8,7 @@ import { renderApp } from './render/app.js';
 import { initTabs } from './actions/tabs.js';
 import { initVehicleActions } from './actions/vehicle.js';
 import { initRecordActions, editRecord, deleteRecord } from './actions/record.js';
-import { initItemActions, editMaintenanceItem, deleteMaintenanceItem, quickCompleteMaintenance } from './actions/item.js';
+import { initItemActions, editMaintenanceItem, deleteMaintenanceItem, quickCompleteMaintenance, showItemHistory } from './actions/item.js';
 import { initBackupActions } from './actions/backup.js';
 
 // 動態產生的卡片/表格按鈕以 data-action 委派處理
@@ -16,6 +16,7 @@ const delegatedActions = {
   'edit-item': editMaintenanceItem,
   'delete-item': deleteMaintenanceItem,
   'complete-item': quickCompleteMaintenance,
+  'item-history': showItemHistory,
   'edit-record': editRecord,
   'delete-record': deleteRecord
 };

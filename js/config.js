@@ -3,7 +3,7 @@
 // 這兩個值公開在 GitHub 上沒有關係，安全性由後台的 ID Token 驗證與成員名單把關。
 export const CONFIG = {
   // Apps Script 網頁應用程式網址：https://script.google.com/macros/s/xxxx/exec
-  GAS_URL: '',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyJk2e0x1gkMnyLJIPufuJiW_kNXk_bV8YGS-eyuyeX5Q8K5adpejUlatpQtXZbWn-jNA/exec',
   // Google Cloud OAuth 用戶端 ID：xxxx.apps.googleusercontent.com
   GOOGLE_CLIENT_ID: ''
 };

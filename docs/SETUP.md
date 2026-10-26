@@ -2,6 +2,10 @@
 
 完成以下步驟後，網頁會從「本機模式」切換成「雲端模式」：家人用自己的 Google 帳號登入，各自的資料存在你的 Google 試算表。
 
+> **從 GitHub fork 這個專案的人：** 請用你自己的 Google 帳號完整走一次以下步驟，建立屬於你自己的一套後台。
+> 你的資料存在你自己的試算表，與原作者的網站互不相通。
+> 下文的 `jim0954.github.io` 是原作者的網址，請一律換成你自己的 GitHub Pages 網址。
+
 > 全部步驟都使用**你自己的 Google 帳號**（試算表、Apps Script、Google Cloud 都是同一個帳號）。
 
 ---
@@ -68,8 +72,8 @@
    - 應用程式類型：**網頁應用程式**
    - 名稱：`CarTracker Web`
    - 已授權的 JavaScript 來源，新增兩筆：
-     - `https://jim0954.github.io`
-     - `http://localhost:5173`（本機測試用）
+     - 你的 GitHub Pages 網域，例如 `https://jim0954.github.io`（只填網域，不要加 `/CarTracker/`）
+     - `http://localhost:5173`（本機測試用，對應 README 的 `npx serve . -l 5173`）
    - 按「建立」，複製「用戶端 ID」（`xxxx.apps.googleusercontent.com`）
 
 ## 步驟 6：填入設定
@@ -96,7 +100,7 @@
 
 **顯示「管理者尚未在設定分頁填入 CLIENT_ID」**：步驟 6 的第 1 點未完成。
 
-**Google 登入按鈕顯示錯誤 `origin_mismatch`**：步驟 5 的「已授權的 JavaScript 來源」沒有加入目前網址。
+**Google 登入按鈕顯示錯誤 `origin_mismatch`**：步驟 5 的「已授權的 JavaScript 來源」沒有加入目前網址。本機測試請用 `http://localhost:5173` 開啟（不要用 `127.0.0.1`）。
 
 **可以直接在試算表修改資料嗎？** 可以。改完後在網頁按右上角的「↻ 重新整理」即可看到。
 「類型」欄請使用下拉選單中的值；ID 欄位請勿修改。

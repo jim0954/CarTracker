@@ -18,8 +18,8 @@ export function editMaintenanceItem(itemId) {
   document.getElementById('item-modal-title').innerHTML = '<i class="fa-solid fa-gear text-emerald-400"></i> 編輯保養項目週期';
   document.getElementById('item-edit-id').value = item.id;
   document.getElementById('item-input-name').value = item.name;
-  document.getElementById('item-input-interval-km').value = item.intervalKm;
-  document.getElementById('item-input-interval-months').value = item.intervalMonths || 6;
+  document.getElementById('item-input-interval-km').value = item.intervalKm || '';
+  document.getElementById('item-input-interval-months').value = item.intervalMonths || '';
   document.getElementById('item-input-last-km').value = item.lastKm;
   document.getElementById('item-input-last-date').value = item.lastDate || '';
   document.getElementById('item-input-notes').value = item.notes || '';
@@ -56,11 +56,17 @@ export function initItemActions() {
     const v = store.getCurrentVehicle();
     const editId = document.getElementById('item-edit-id').value;
     const name = document.getElementById('item-input-name').value.trim();
-    const intervalKm = parseInt(document.getElementById('item-input-interval-km').value, 10);
-    const intervalMonths = parseInt(document.getElementById('item-input-interval-months').value, 10) || 6;
+    // 里程與月數可只填一個，空白存成 0
+    const intervalKm = parseInt(document.getElementById('item-input-interval-km').value, 10) || 0;
+    const intervalMonths = parseInt(document.getElementById('item-input-interval-months').value, 10) || 0;
     const lastKm = parseInt(document.getElementById('item-input-last-km').value, 10) || 0;
     const lastDate = document.getElementById('item-input-last-date').value;
     const notes = document.getElementById('item-input-notes').value.trim();
+
+    if (!intervalKm && !intervalMonths) {
+      showToast('週期里程與週期月數至少要填一個', 'error');
+      return;
+    }
 
     if (editId) {
       store.saveItem({ id: editId, name, intervalKm, intervalMonths, lastKm, lastDate, notes });

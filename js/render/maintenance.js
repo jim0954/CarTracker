@@ -7,15 +7,15 @@ function toYmd(date) {
 }
 
 // 「加入 Google 日曆」連結：以預計到期日（雲端推算）或月數到期日建立全天事件
+// 只看里程且尚無推算到期日時無法決定日期，回傳空字串
 function calendarUrl(vehicle, item, fallbackDate, nextMileage) {
   const due = item.dueDate ? new Date(`${item.dueDate}T00:00:00`) : fallbackDate;
+  if (!due) return '';
   const end = new Date(due);
   end.setDate(end.getDate() + 1);
-  const lines = [
-    `車輛：${vehicle.name}（${vehicle.plate}）`,
-    `建議保養里程：${formatNumber(nextMileage)} km`,
-    `上次更換：${formatNumber(item.lastKm)} km（${item.lastDate || '未填'}）`
-  ];
+  const lines = [`車輛：${vehicle.name}（${vehicle.plate}）`];
+  if (nextMileage !== null) lines.push(`建議保養里程：${formatNumber(nextMileage)} km`);
+  lines.push(`上次更換：${formatNumber(item.lastKm)} km（${item.lastDate || '未填'}）`);
   if (item.notes) lines.push(`備註：${item.notes}`);
   lines.push('', '由 CarTracker 建立');
   const details = lines.join('\n');
@@ -36,16 +36,27 @@ export function renderMaintenanceTab(vehicle) {
   let alertCount = 0;
 
   items.forEach(item => {
-    const nextMileage = item.lastKm + item.intervalKm;
-    const remainingKm = nextMileage - vehicle.currentMileage;
-    const progressPercent = Math.min(100, Math.max(0, ((vehicle.currentMileage - item.lastKm) / item.intervalKm) * 100));
+    // 週期可只設里程或只設月數（0 或空白代表不看該條件）
+    const hasKm = Number(item.intervalKm) > 0;
+    const hasMonths = Number(item.intervalMonths) > 0 && !!item.lastDate;
+
+    const nextMileage = hasKm ? item.lastKm + Number(item.intervalKm) : null;
+    const remainingKm = hasKm ? nextMileage - vehicle.currentMileage : Infinity;
+    const kmPercent = hasKm ? ((vehicle.currentMileage - item.lastKm) / item.intervalKm) * 100 : 0;
 
     // Date calculations
-    const lastDateObj = new Date(item.lastDate || '2023-01-01');
-    const nextDateObj = new Date(lastDateObj);
-    nextDateObj.setMonth(nextDateObj.getMonth() + (item.intervalMonths || 6));
-    const today = new Date();
-    const diffDays = Math.ceil((nextDateObj - today) / (1000 * 60 * 60 * 24));
+    let nextDateObj = null;
+    let diffDays = Infinity;
+    let timePercent = 0;
+    if (hasMonths) {
+      const lastDateObj = new Date(item.lastDate);
+      nextDateObj = new Date(lastDateObj);
+      nextDateObj.setMonth(nextDateObj.getMonth() + Number(item.intervalMonths));
+      const today = new Date();
+      diffDays = Math.ceil((nextDateObj - today) / (1000 * 60 * 60 * 24));
+      timePercent = ((today - lastDateObj) / (nextDateObj - lastDateObj)) * 100;
+    }
+    const progressPercent = Math.min(100, Math.max(0, kmPercent, timePercent));
 
     // Health Status Logic
     let status = 'normal'; // 'normal' | 'due-soon' | 'overdue'
@@ -56,6 +67,16 @@ export function renderMaintenanceTab(vehicle) {
       status = 'due-soon';
       alertCount++;
     }
+
+    // 標籤文字：逾期時以已超過的條件顯示，否則以較接近的條件顯示
+    const overByKm = remainingKm <= 0;
+    const kmCloser = hasKm && (!hasMonths || overByKm || (diffDays > 0 && remainingKm / item.intervalKm <= diffDays / (item.intervalMonths * 30)));
+    const remainText = !hasKm && !hasMonths ? '未設定週期'
+      : kmCloser ? `${status === 'overdue' ? '超過' : '剩'} ${formatNumber(Math.abs(remainingKm))} km`
+      : `${status === 'overdue' ? '超過' : '剩'} ${Math.abs(diffDays)} 天`;
+    const intervalText = [hasKm ? `每 ${formatNumber(item.intervalKm)} km` : '', Number(item.intervalMonths) > 0 ? `${item.intervalMonths} 個月` : '']
+      .filter(Boolean).join(' / ') || '未設定週期';
+    const calUrl = calendarUrl(vehicle, item, nextDateObj, nextMileage);
 
     const card = document.createElement('div');
     card.className = `relative bg-slate-850 rounded-2xl p-5 border transition-all duration-200 hover:border-slate-600 flex flex-col justify-between ${
@@ -69,17 +90,17 @@ export function renderMaintenanceTab(vehicle) {
 
     if (status === 'overdue') {
       badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
-        <i class="fa-solid fa-triangle-exclamation mr-1"></i>已逾期 (超過 ${Math.abs(remainingKm)} km)
+        <i class="fa-solid fa-triangle-exclamation mr-1"></i>已逾期 (${remainText})
       </span>`;
       progressColor = 'bg-rose-500';
     } else if (status === 'due-soon') {
       badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
-        <i class="fa-solid fa-clock mr-1"></i>即將到期 (剩 ${remainingKm} km)
+        <i class="fa-solid fa-clock mr-1"></i>即將到期 (${remainText})
       </span>`;
       progressColor = 'bg-amber-500';
     } else {
       badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-        <i class="fa-solid fa-check mr-1"></i>狀態良好 (剩 ${remainingKm} km)
+        <i class="fa-solid fa-check mr-1"></i>狀態良好 (${remainText})
       </span>`;
       progressColor = 'bg-emerald-500';
     }
@@ -114,8 +135,8 @@ export function renderMaintenanceTab(vehicle) {
           </div>
           <div>
             <span class="text-slate-500 block">建議保養里程</span>
-            <span class="font-mono text-slate-300 font-semibold">${formatNumber(nextMileage)} km</span>
-            <span class="text-[10px] text-slate-500 block">每 ${formatNumber(item.intervalKm)} km / ${escapeHtml(item.intervalMonths)}月</span>
+            <span class="font-mono text-slate-300 font-semibold">${nextMileage === null ? '—' : `${formatNumber(nextMileage)} km`}</span>
+            <span class="text-[10px] text-slate-500 block">${escapeHtml(intervalText)}</span>
           </div>
         </div>
         ${item.dueDate ? `<p class="text-[11px] text-slate-400 mt-2"><i class="fa-regular fa-calendar mr-1"></i>預計到期日 <span class="font-mono text-slate-300">${escapeHtml(item.dueDate)}</span></p>` : ''}
@@ -130,9 +151,9 @@ export function renderMaintenanceTab(vehicle) {
           <button data-action="delete-item" data-id="${escapeHtml(item.id)}" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="刪除項目">
             <i class="fa-solid fa-trash-can"></i>
           </button>
-          <a href="${escapeHtml(calendarUrl(vehicle, item, nextDateObj, nextMileage))}" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-sky-300 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="加入 Google 日曆">
+          ${calUrl ? `<a href="${escapeHtml(calUrl)}" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-sky-300 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition" title="加入 Google 日曆">
             <i class="fa-regular fa-calendar-plus"></i>
-          </a>
+          </a>` : ''}
         </div>
 
         <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">

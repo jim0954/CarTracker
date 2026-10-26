@@ -48,7 +48,7 @@ function reminderHtml_(name, due) {
       <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0">${escapeHtml_(vehicle.name)}<br><span style="color:#64748b;font-size:12px">${escapeHtml_(vehicle.plate)}</span></td>
       <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0">${escapeHtml_(row.name)}</td>
       <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0">${escapeHtml_(row.dueDate)}<br><span style="color:${daysLeft <= 0 ? '#e11d48' : '#d97706'};font-size:12px">${daysLeft <= 0 ? (daysLeft === 0 ? '今天到期' : `已逾期 ${-daysLeft} 天`) : `剩 ${daysLeft} 天`}</span></td>
-      <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0">${Number(row.lastKm || 0) + Number(row.intervalKm || 0)} km</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0">${Number(row.intervalKm) > 0 ? `${Number(row.lastKm || 0) + Number(row.intervalKm)} km` : '—'}</td>
     </tr>`;
   const table = (title, list) => list.length === 0 ? '' : `
     <h3 style="margin:20px 0 8px">${title}</h3>

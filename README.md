@@ -13,6 +13,7 @@
 - 加油紀錄自動計算油耗（km/L）與每公里油資
 - 每月花費趨勢與支出類別圖表
 - 匯出 JSON 備份 / CSV 表格，匯入還原
+- 從愛車99 搬資料過來（[docs/IKNOW99.md](docs/IKNOW99.md)）
 - Google 日曆：保養到期事件自動建立並邀請擁有者；也可手動「加入 Google 日曆」
 - 每日 Email 提醒（即將到期 / 已到期）
 - 手機可「加到主畫面」使用（PWA），支援離線開啟
@@ -60,9 +61,12 @@ js/auth.js            Google 登入
 js/session.js         登入畫面與使用者選單
 js/render/            各分頁畫面
 js/actions/           各功能的事件處理
+js/iknow99.js         愛車99 資料轉換
 gas/                  Google Apps Script 後台程式
 tests/gas/            後台單元測試與本機模擬後台
+tests/web/            前端單元測試
 docs/SETUP.md         Google 端設定教學
+docs/IKNOW99.md       從愛車99 搬資料
 ```
 前端不需要打包工具，GitHub Pages 直接部署 `main` 分支根目錄。
 
@@ -74,10 +78,11 @@ npx serve . -l 5173
 ```
 用瀏覽器開啟 `http://localhost:5173`（雲端模式的 Google 登入只接受 SETUP.md 步驟 5 授權過的網址）。
 
-後台單元測試（不需要 Google 帳號）：
+單元測試（不需要 Google 帳號）：
 
 ```bash
 node tests/gas/run.js
+node tests/web/iknow99.test.mjs
 ```
 
 更新後台程式（已設定 clasp）：
@@ -93,5 +98,6 @@ clasp push
 - [x] 第 2 階段：Google Apps Script + 試算表後台，各自 Google 帳號登入
 - [x] 第 3 階段：Google 日曆保養提醒、每日 Email 提醒
 - [x] 第 4 階段：PWA 手機加到主畫面
-- [ ] 完成 Google 端設定並上線雲端模式
+- [x] 完成 Google 端設定並上線雲端模式
+- [x] 從愛車99 匯入
 - [ ] 選做：LINE 推播、共用車輛、收據拍照、保險 / 驗車 / 稅金提醒

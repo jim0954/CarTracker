@@ -3,6 +3,7 @@ import * as store from '../store.js';
 import { showToast, openModal, closeModal, openConfirmModal } from '../utils.js';
 import { showLoading, hideLoading } from '../session.js';
 import { renderApp } from '../render/app.js';
+import { isIknow99Export, convertIknow99 } from '../iknow99.js';
 
 // 雲端模式下匯入需等後台寫入完成
 async function runImport(task, successMessage) {
@@ -96,7 +97,49 @@ export function initBackupActions() {
     this.value = '';
   });
 
-  // 4. 載入範例資料
+  // 4. 從愛車99 匯入（附加，不覆蓋）
+  document.getElementById('btn-trigger-import-iknow99').addEventListener('click', () => {
+    document.getElementById('input-import-iknow99').click();
+  });
+
+  document.getElementById('input-import-iknow99').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      let parsed;
+      try {
+        parsed = JSON.parse(evt.target.result);
+      } catch (err) {
+        showToast('無法解析此檔案，請確認是收集器下載的 iknow99_export.json', 'error');
+        return;
+      }
+      if (!isIknow99Export(parsed)) {
+        showToast('檔案中找不到愛車99 的紀錄資料', 'error');
+        return;
+      }
+      const { data, missingDetails } = convertIknow99(parsed);
+      if (data.vehicles.length === 0) {
+        showToast('檔案中沒有車輛的紀錄列表，請在愛車99 點開每台車的紀錄後再下載', 'error');
+        return;
+      }
+      const lines = data.vehicles.map(v => {
+        const items = data.maintenanceItems.filter(it => it.vehicleId === v.id).length;
+        const records = data.records.filter(r => r.vehicleId === v.id).length;
+        return `• ${v.name}：${records} 筆紀錄、${items} 個保養項目`;
+      });
+      let message = `將加入以下車輛（不會覆蓋現有資料）：\n${lines.join('\n')}`;
+      if (missingDetails > 0) message += `\n\n有 ${missingDetails} 筆保養沒有點開明細，只會匯入日期、里程與金額。`;
+      message += '\n\n匯入後請到「車輛設定」修改車名與車牌。重複匯入會產生重複的資料。';
+      openConfirmModal('從愛車99 匯入', message, () =>
+        runImport(() => store.appendData(data), `已匯入 ${data.vehicles.length} 台車、${data.records.length} 筆紀錄`));
+    };
+    reader.readAsText(file);
+    this.value = '';
+  });
+
+  // 5. 載入範例資料
   const loadSample = () => runImport(() => store.resetToSample(), '已載入範例資料');
   document.getElementById('btn-reset-demo').addEventListener('click', () => {
     openConfirmModal('載入範例資料', '確定要載入範例資料嗎？目前的記錄將會被覆蓋。', loadSample);

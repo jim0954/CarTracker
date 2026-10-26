@@ -325,6 +325,34 @@ export async function importData(data) {
   persist();
 }
 
+// 附加匯入（例如從愛車99 轉換的資料）：不刪除既有資料，id 重新產生避免衝突
+export async function appendData(data) {
+  if (isCloudMode) {
+    await syncQueue;
+    const result = await api.call('importAll', { data: migrate(data), append: true });
+    await reloadFromCloud();
+    return result;
+  }
+  const vehicleIds = {};
+  const itemIds = {};
+  data.vehicles.forEach(v => {
+    vehicleIds[v.id] = newId('v');
+    appState.vehicles.push({ ...v, id: vehicleIds[v.id] });
+  });
+  data.maintenanceItems.filter(it => vehicleIds[it.vehicleId]).forEach(it => {
+    itemIds[it.id] = newId('item');
+    appState.maintenanceItems.push({ ...it, id: itemIds[it.id], vehicleId: vehicleIds[it.vehicleId] });
+  });
+  data.records.filter(r => vehicleIds[r.vehicleId]).forEach(r => {
+    const details = { ...(r.details || {}) };
+    if (details.itemIds) details.itemIds = details.itemIds.map(id => itemIds[id]).filter(Boolean);
+    appState.records.push({ ...r, id: newId('rec'), vehicleId: vehicleIds[r.vehicleId], details });
+  });
+  if (!appState.currentVehicleId && appState.vehicles.length) appState.currentVehicleId = appState.vehicles[0].id;
+  persist();
+  return { vehicles: data.vehicles.length, maintenanceItems: Object.keys(itemIds).length, records: data.records.length };
+}
+
 export function resetToSample() {
   return importData(cloneInitialState());
 }

@@ -322,81 +322,39 @@
     </div>
 
     <!-- TAB 3: Fuel & Efficiency (加油與油耗) -->
-    <div id="tab-content-fuel" class="tab-pane hidden flex flex-col gap-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-xl font-bold text-white">加油紀錄與油耗統計</h2>
-          <p class="text-xs text-slate-400 mt-0.5">每次加油時「加滿跳停」，自動計算每公升油耗與每公里成本</p>
-        </div>
+    <div id="tab-content-fuel" class="tab-pane hidden flex flex-col gap-4">
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="text-xl font-bold text-white">加油與油耗</h2>
         <button id="btn-quick-fuel" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition">
-          <i class="fa-solid fa-gas-pump"></i> 新增加油紀錄
+          <i class="fa-solid fa-plus"></i> 加油
         </button>
       </div>
 
-      <!-- Fuel Stats Overview Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
-          <span class="text-xs text-slate-400">平均油耗 (km/L)</span>
-          <div class="mt-2 flex items-baseline gap-1">
-            <span id="fuel-stat-avg-kml" class="text-2xl font-black font-mono text-emerald-400">38.5</span>
-            <span class="text-xs text-slate-400">km/L</span>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-1">依連續加滿紀錄計算</p>
+      <!-- 油耗統計：一張卡片四格 -->
+      <div class="grid grid-cols-4 bg-slate-850 border border-slate-800 rounded-2xl divide-x divide-slate-800 text-center">
+        <div class="py-3 px-1">
+          <div id="fuel-stat-avg-kml" class="text-lg font-black font-mono text-emerald-400">0.0</div>
+          <div class="text-[11px] text-slate-400">km/L</div>
         </div>
-
-        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
-          <span class="text-xs text-slate-400">每公里油資</span>
-          <div class="mt-2 flex items-baseline gap-1">
-            <span id="fuel-stat-cost-km" class="text-2xl font-black font-mono text-sky-400">0.82</span>
-            <span class="text-xs text-slate-400">元/km</span>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-1">目前平均油費負擔</p>
+        <div class="py-3 px-1">
+          <div id="fuel-stat-cost-km" class="text-lg font-black font-mono text-sky-400">0.00</div>
+          <div class="text-[11px] text-slate-400">元/km</div>
         </div>
-
-        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
-          <span class="text-xs text-slate-400">累計加油量</span>
-          <div class="mt-2 flex items-baseline gap-1">
-            <span id="fuel-stat-total-liters" class="text-2xl font-black font-mono text-white">334.2</span>
-            <span class="text-xs text-slate-400">L</span>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-1">總消耗汽油公升</p>
+        <div class="py-3 px-1">
+          <div id="fuel-stat-total-liters" class="text-lg font-black font-mono text-white">0.0</div>
+          <div class="text-[11px] text-slate-400">累計公升</div>
         </div>
-
-        <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4">
-          <span class="text-xs text-slate-400">累計加油金額</span>
-          <div class="mt-2 flex items-baseline gap-1">
-            <span class="text-xs text-slate-400">NT$</span>
-            <span id="fuel-stat-total-cost" class="text-2xl font-black font-mono text-white">10,540</span>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-1">總加油開銷</p>
+        <div class="py-3 px-1">
+          <div id="fuel-stat-total-cost" class="text-lg font-black font-mono text-white">0</div>
+          <div class="text-[11px] text-slate-400">累計 NT$</div>
         </div>
       </div>
+      <p class="text-[11px] text-slate-500 -mt-2 px-1">油耗依連續「加滿」的紀錄計算；點一筆可編輯</p>
 
-      <!-- Fuel History Table -->
+      <!-- 加油列表 -->
       <div class="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-          <h3 class="font-bold text-sm text-slate-200">加油明細表</h3>
-          <span class="text-xs text-slate-400">建議每次加滿以獲得準確油耗</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-slate-800/80 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-700/80">
-              <tr>
-                <th scope="col" class="py-3 px-4">加油日期</th>
-                <th scope="col" class="py-3 px-4">當時里程</th>
-                <th scope="col" class="py-3 px-4">區間行駛</th>
-                <th scope="col" class="py-3 px-4">加油量 (L)</th>
-                <th scope="col" class="py-3 px-4">單價 (元)</th>
-                <th scope="col" class="py-3 px-4 text-right">總金額</th>
-                <th scope="col" class="py-3 px-4 text-center">單次油耗</th>
-                <th scope="col" class="py-3 px-4">油站 / 備註</th>
-              </tr>
-            </thead>
-            <tbody id="fuel-table-body" class="divide-y divide-slate-800">
-              <!-- Rendered dynamically -->
-            </tbody>
-          </table>
-        </div>
+        <div id="fuel-list" class="divide-y divide-slate-800"></div>
+        <div id="fuel-empty-state" class="hidden p-10 text-center text-slate-500 text-sm">尚無加油紀錄</div>
       </div>
     </div>
 

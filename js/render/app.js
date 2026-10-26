@@ -1,4 +1,4 @@
-// --- 整體畫面（車輛選單、Hero 區塊）---
+// --- 整體畫面（車輛選單、車輛摘要列）---
 import * as store from '../store.js';
 import { formatNumber } from '../utils.js';
 import { renderMaintenanceTab } from './maintenance.js';
@@ -28,20 +28,13 @@ export function renderApp() {
     select.appendChild(opt);
   });
 
-  // 2. Hero 車輛資訊
-  document.getElementById('vehicle-title').textContent = vehicle.name;
-  document.getElementById('vehicle-plate').textContent = vehicle.plate;
-  document.getElementById('vehicle-year').textContent = `${vehicle.year} 年式`;
-  document.getElementById('vehicle-notes').textContent = vehicle.notes || '隨時掌握保養與里程';
-
+  // 2. 車輛摘要列
   const typeBadge = document.getElementById('vehicle-badge-type');
-  if (vehicle.type === 'moto') {
-    typeBadge.innerHTML = '<i class="fa-solid fa-motorcycle mr-1"></i>機車';
-    typeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-  } else {
-    typeBadge.innerHTML = '<i class="fa-solid fa-car mr-1"></i>汽車';
-    typeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-400 border border-sky-500/30';
-  }
+  const isMoto = vehicle.type === 'moto';
+  typeBadge.innerHTML = `<i class="fa-solid ${isMoto ? 'fa-motorcycle' : 'fa-car'}"></i>`;
+  typeBadge.title = isMoto ? '機車' : '汽車';
+  typeBadge.className = `w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm ${isMoto
+    ? 'bg-emerald-500/15 text-emerald-400' : 'bg-sky-500/15 text-sky-400'}`;
 
   document.getElementById('hero-current-mileage').textContent = formatNumber(vehicle.currentMileage);
   document.getElementById('current-mileage-label').textContent = formatNumber(vehicle.currentMileage);

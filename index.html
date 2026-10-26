@@ -148,72 +148,16 @@
     </div>
   </section>
 
-  <!-- Hero Vehicle Banner Card -->
-  <section id="hero-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 w-full">
-    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-800 via-slate-800 to-slate-850 border border-slate-700/80 shadow-2xl">
-      <!-- Background Aesthetic Graphic -->
-      <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-25 sm:opacity-40 pointer-events-none overflow-hidden">
-        <img src="assets/hero.jpg" alt="Dashboard Graphic" class="w-full h-full object-cover object-center">
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-800/60 to-transparent"></div>
-      </div>
-
-      <div class="relative p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div class="flex items-center gap-2 mb-2">
-            <span id="vehicle-badge-type" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              <i class="fa-solid fa-motorcycle mr-1"></i>機車
-            </span>
-            <span id="vehicle-plate" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-700 text-slate-300 border border-slate-600">
-              MBQ-8899
-            </span>
-            <span id="vehicle-year" class="text-xs text-slate-400">
-              2023 年式
-            </span>
-          </div>
-
-          <h1 id="vehicle-title" class="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            SYM DRG BT 158
-          </h1>
-          <p id="vehicle-notes" class="text-xs sm:text-sm text-slate-400 mt-1">
-            主要通勤代步車 • 定期機油與耗材守護中
-          </p>
-        </div>
-
-        <!-- Key Metrics Cards in Hero -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          <!-- Mileage Card -->
-          <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between">
-            <span class="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-              <i class="fa-solid fa-road text-emerald-400"></i> 目前累計里程
-            </span>
-            <div class="mt-2">
-              <span id="hero-current-mileage" class="text-2xl sm:text-3xl font-black font-mono text-emerald-400">12,850</span>
-              <span class="text-xs text-slate-400 ml-1">km</span>
-            </div>
-          </div>
-
-          <!-- Pending Alerts Card -->
-          <div class="bg-slate-900/80 backdrop-blur-sm border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between">
-            <span class="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-              <i class="fa-solid fa-bell text-amber-400"></i> 保養待辦項目
-            </span>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span id="hero-alert-count" class="text-2xl sm:text-3xl font-black font-mono text-amber-400">2</span>
-              <span class="text-xs text-slate-400">項需注意</span>
-            </div>
-          </div>
-
-          <!-- Total Expense Card -->
-          <div class="col-span-2 sm:col-span-1 bg-slate-900/80 backdrop-blur-sm border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between">
-            <span class="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-              <i class="fa-solid fa-receipt text-sky-400"></i> 累計總花費
-            </span>
-            <div class="mt-2">
-              <span class="text-xs text-slate-400 mr-0.5">NT$</span>
-              <span id="hero-total-cost" class="text-2xl sm:text-3xl font-black font-mono text-white">16,420</span>
-            </div>
-          </div>
-        </div>
+  <!-- 車輛摘要：一行顯示里程、待保養項目與累計花費（車名在上方選單） -->
+  <section id="hero-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 w-full">
+    <div class="flex items-center gap-2 bg-slate-850 border border-slate-800 rounded-2xl px-3 py-2.5">
+      <span id="vehicle-badge-type" class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm bg-emerald-500/15 text-emerald-400">
+        <i class="fa-solid fa-motorcycle"></i>
+      </span>
+      <div class="flex-1 grid grid-cols-3 divide-x divide-slate-800 text-center text-sm whitespace-nowrap">
+        <div><span id="hero-current-mileage" class="font-mono font-bold text-emerald-400">0</span><span class="text-[11px] text-slate-400 ml-0.5">km</span></div>
+        <div><span id="hero-alert-count" class="font-mono font-bold text-amber-400">0</span><span class="text-[11px] text-slate-400 ml-0.5">項待保養</span></div>
+        <div><span class="text-[11px] text-slate-400 mr-0.5">NT$</span><span id="hero-total-cost" class="font-mono font-bold text-white">0</span></div>
       </div>
     </div>
   </section>
@@ -349,7 +293,7 @@
           <div class="text-[11px] text-slate-400">累計 NT$</div>
         </div>
       </div>
-      <p class="text-[11px] text-slate-500 -mt-2 px-1">油耗依連續「加滿」的紀錄計算；點一筆可編輯</p>
+      <p class="text-[11px] text-slate-500 -mt-2 px-1">油耗依連續「加滿」的紀錄計算</p>
 
       <!-- 加油列表 -->
       <div class="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">

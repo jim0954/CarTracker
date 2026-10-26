@@ -143,7 +143,10 @@ export function renderMaintenanceTab(vehicle) {
   container.classList.toggle('hidden', rows.length === 0);
 
   // Update Alert Badges
-  document.getElementById('hero-alert-count').textContent = alertCount;
+  const heroAlert = document.getElementById('hero-alert-count');
+  heroAlert.textContent = alertCount;
+  heroAlert.classList.toggle('text-amber-400', alertCount > 0);
+  heroAlert.classList.toggle('text-slate-300', alertCount === 0);
   ['badge-tab-alert', 'badge-tab-alert-mobile'].forEach(id => {
     const badge = document.getElementById(id);
     badge.textContent = alertCount;

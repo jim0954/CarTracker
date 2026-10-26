@@ -46,12 +46,13 @@ function groupVehicles(lists) {
   return groups;
 }
 
-function itemNotes(sub) {
-  const parts = [sub.Name];
-  if (sub.Spec) parts.push(sub.Spec);
-  if (num(sub.UnitPrice) > 0) parts.push(`$${num(sub.UnitPrice)}${num(sub.Qty) > 1 ? `×${num(sub.Qty)}` : ''}`);
-  if (sub.Comment) parts.push(`(${sub.Comment})`);
-  return parts.join(' ');
+// 保養明細：規格與說明合併成一欄，金額為單價 × 數量
+function toPart(sub) {
+  return {
+    name: sub.Name,
+    spec: [sub.Spec, sub.Comment].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim(),
+    price: num(sub.UnitPrice) * (num(sub.Qty) || 1)
+  };
 }
 
 function intervalText(sub) {
@@ -143,15 +144,16 @@ export function convertIknow99(captures) {
       }
       if (!d) missingDetails++;
       const subs = d && Array.isArray(d.SubForm) ? d.SubForm : [];
-      const notes = subs.map(itemNotes);
-      if (f.Comment) notes.push(f.Comment);
       out.records.push({
         ...base,
         type: 'maintenance',
         title: subs.length ? subs.map(s => s.Name).join('、') : (f.Title || '保養維修'),
         vendor: subs.length ? (f.Title || '') : '',
-        notes: notes.join('；'),
-        details: { itemIds: [...new Set(subs.map(s => itemIds.get(s.Name)).filter(Boolean))] }
+        notes: f.Comment || '',
+        details: {
+          itemIds: [...new Set(subs.map(s => itemIds.get(s.Name)).filter(Boolean))],
+          parts: subs.map(toPart)
+        }
       });
     });
 

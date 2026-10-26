@@ -43,7 +43,11 @@ assert.strictEqual(bootA.records.length, 2);
 const fuel = bootA.records.find(r => r.type === 'fuel');
 assert.deepStrictEqual(JSON.parse(JSON.stringify(fuel.details)), { liters: 6, pricePerLiter: 31.5, isFullTank: true });
 const maint = bootA.records.find(r => r.type === 'maintenance');
-assert.deepStrictEqual(JSON.parse(JSON.stringify(maint.details)), { itemIds: [item.id] });
+assert.deepStrictEqual(JSON.parse(JSON.stringify(maint.details)), { itemIds: [item.id], parts: [] });
+
+// 保養項目明細存成 JSON，空名稱的列會被略過
+G('svcSaveRecord_')(A, { ...maint, details: { itemIds: [item.id], parts: [{ name: '機油', spec: '10W40', price: '250' }, { name: ' ', price: 1 }] } });
+assert.deepStrictEqual(JSON.parse(JSON.stringify(G('svcBootstrap_')(A).records.find(r => r.id === maint.id).details.parts)), [{ name: '機油', spec: '10W40', price: 250 }]);
 
 // edit record
 G('svcSaveRecord_')(A, { ...maint, title: '換機油2' });
@@ -112,4 +116,17 @@ module.exports = { ctx };
   G('svcImportAll_')(D, local, false);
   assert.strictEqual(G('svcBootstrap_')(D).vehicles.length, 1, 'replace removes existing');
   console.log('append import tests passed');
+}
+
+// 舊試算表缺少新欄位時自動補上標題
+{
+  const ctx2 = createContext({ dir });
+  ctx2.__get('setup')();
+  const sheet = ctx2._sheets.find(s => s.name === '紀錄');
+  const col = sheet.data[0].indexOf('項目明細');
+  sheet.data.forEach(row => row.splice(col, 1));
+  assert.strictEqual(sheet.data[0].indexOf('項目明細'), -1);
+  ctx2.__get('readTable_')('records');
+  assert.notStrictEqual(sheet.data[0].indexOf('項目明細'), -1, 'header re-added');
+  console.log('auto column tests passed');
 }

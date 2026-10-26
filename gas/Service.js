@@ -53,7 +53,7 @@ function recordToClient_(row) {
   if (r.type === 'fuel') {
     details = { liters: r.liters || 0, pricePerLiter: r.pricePerLiter || 0, isFullTank: r.isFullTank };
   } else if (r.type === 'maintenance') {
-    details = { itemIds: r.itemIds };
+    details = { itemIds: r.itemIds, parts: r.parts || [] };
   }
   return {
     id: r.id, vehicleId: r.vehicleId, date: r.date, mileage: r.mileage, type: r.type,
@@ -69,8 +69,16 @@ function recordFromClient_(rec) {
     liters: rec.type === 'fuel' ? d.liters : '',
     pricePerLiter: rec.type === 'fuel' ? d.pricePerLiter : '',
     isFullTank: rec.type === 'fuel' ? !!d.isFullTank : false,
-    itemIds: rec.type === 'maintenance' ? d.itemIds || [] : []
+    itemIds: rec.type === 'maintenance' ? d.itemIds || [] : [],
+    parts: rec.type === 'maintenance' ? cleanParts_(d.parts) : []
   };
+}
+
+// 保養項目明細：[{ name, spec, price }]
+function cleanParts_(parts) {
+  return (Array.isArray(parts) ? parts : [])
+    .map(p => ({ name: String(p.name || '').trim(), spec: String(p.spec || '').trim(), price: Number(p.price) || 0 }))
+    .filter(p => p.name);
 }
 
 function pick_(obj, keys) {

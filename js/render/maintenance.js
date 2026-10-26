@@ -1,6 +1,7 @@
 // --- 分頁 1：保養項目 ---
 import * as store from '../store.js';
 import { formatNumber, escapeHtml } from '../utils.js';
+import { recordParts } from '../parts.js';
 
 function toYmd(date) {
   return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
@@ -73,8 +74,34 @@ const STATUS_STYLE = {
   normal: { text: 'text-emerald-400', bar: 'bg-emerald-500', dot: 'bg-emerald-500', rank: 2 }
 };
 
-// 一個項目一列：名稱、剩餘量、進度條與上次更換；點一下展開詳細資料與操作
-function itemRow(vehicle, item, info) {
+// 這個項目的歷次更換（新到舊）：明細名稱相同，或紀錄有關聯這個項目
+function itemHistory(item, maintRecords) {
+  const list = maintRecords
+    .map(({ record, parts }) => {
+      const part = parts.find(p => p.name === item.name);
+      const linked = (record.details && record.details.itemIds || []).includes(item.id);
+      return part || linked ? { record, part } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => String(b.record.date).localeCompare(String(a.record.date)) || b.record.mileage - a.record.mileage);
+  return list.map((h, i) => ({ ...h, gapKm: list[i + 1] ? h.record.mileage - list[i + 1].record.mileage : null }));
+}
+
+function historyHtml(history) {
+  if (history.length === 0) return '<p class="text-slate-500">尚無更換紀錄</p>';
+  return `<ul class="divide-y divide-slate-800/80">${history.map(({ record, part, gapKm }) => `
+    <li class="flex items-start justify-between gap-3 py-1.5">
+      <div class="min-w-0">
+        <span class="font-mono text-slate-300">${escapeHtml(record.date)} · ${formatNumber(record.mileage)} km</span>
+        ${gapKm !== null ? `<span class="text-[11px] text-slate-500 ml-1">+${formatNumber(gapKm)} km</span>` : ''}
+        <span class="block text-[11px] text-slate-500 truncate">${escapeHtml([record.vendor, part && part.spec].filter(Boolean).join(' · '))}</span>
+      </div>
+      <span class="shrink-0 font-mono text-slate-300">${part && part.price ? `$${formatNumber(part.price)}` : ''}</span>
+    </li>`).join('')}</ul>`;
+}
+
+// 一個項目一列：名稱、剩餘量、進度條與上次更換；點一下展開詳細資料、更換紀錄與操作
+function itemRow(vehicle, item, info, history) {
   const style = STATUS_STYLE[info.status];
   const calUrl = calendarUrl(vehicle, item, info.nextDate, info.nextMileage);
   const btn = 'px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition';
@@ -99,6 +126,8 @@ function itemRow(vehicle, item, info) {
       <p>週期：${escapeHtml(info.intervalText)}</p>
       ${info.nextMileage !== null ? `<p>建議保養里程：<span class="font-mono text-slate-300">${formatNumber(info.nextMileage)} km</span></p>` : ''}
       ${item.dueDate ? `<p>預計到期日：<span class="font-mono text-slate-300">${escapeHtml(item.dueDate)}</span></p>` : ''}
+      <p class="pt-2 font-semibold text-slate-300">更換紀錄（${history.length} 次）</p>
+      ${historyHtml(history)}
       <div class="flex flex-wrap gap-2 pt-2">
         <button data-action="complete-item" data-id="${escapeHtml(item.id)}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition"><i class="fa-solid fa-check-double mr-1"></i>記錄更換</button>
         <button data-action="edit-item" data-id="${escapeHtml(item.id)}" class="${btn}"><i class="fa-solid fa-gear mr-1"></i>設定</button>
@@ -120,7 +149,10 @@ export function renderMaintenanceTab(vehicle) {
     .sort((a, b) => STATUS_STYLE[a.info.status].rank - STATUS_STYLE[b.info.status].rank || b.info.progress - a.info.progress);
   const alertCount = rows.filter(r => r.info.status !== 'normal').length;
 
-  rows.forEach(({ item, info }) => container.appendChild(itemRow(vehicle, item, info)));
+  const maintRecords = store.getRecords(vehicle.id)
+    .filter(r => r.type === 'maintenance')
+    .map(record => ({ record, parts: recordParts(record).parts }));
+  rows.forEach(({ item, info }) => container.appendChild(itemRow(vehicle, item, info, itemHistory(item, maintRecords))));
   container.classList.toggle('hidden', rows.length === 0);
 
   // Update Alert Badges

@@ -1,12 +1,15 @@
 // --- Google 登入（Google Identity Services）---
-// 取得的 ID Token 有效 1 小時，存在 localStorage；過期時自動嘗試無聲重新登入。
+// Google ID Token 只有 1 小時，手機（尤其 iPhone）常無法自動續登。
+// 後台驗證 Google 登入後會回傳 30 天的工作階段，之後的請求都改用它，到期前自動換新。
 import { CONFIG } from './config.js';
 
 const TOKEN_KEY = 'cartracker_id_token';
+const SESSION_KEY = 'cartracker_session';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const REFRESH_TIMEOUT_MS = 20000;
 
 let token = null;
+let session = null; // { token, expiresAt, user }
 let user = null;
 let pendingRefresh = null;
 const signInListeners = [];
@@ -24,6 +27,19 @@ function isFresh(jwt) {
   } catch (e) {
     return false;
   }
+}
+
+function sessionValid() {
+  return !!(session && session.expiresAt > Date.now() + 60000);
+}
+
+// 後台回傳新的工作階段時由 api.js 呼叫
+export function setSession({ token: sessionToken, expiresAt }) {
+  if (!user) return;
+  session = { token: sessionToken, expiresAt, user };
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch (e) { /* 無痕模式等情況可忽略 */ }
 }
 
 function setToken(jwt) {
@@ -44,6 +60,18 @@ function handleCredential(response) {
   signInListeners.forEach(cb => cb(user));
 }
 
+// 載入並初始化 Google 登入元件（只做一次；失敗時下次再試）
+let gisReady = null;
+function ensureGis() {
+  if (!gisReady) {
+    gisReady = loadGis().then(initGis).catch(err => {
+      gisReady = null;
+      throw err;
+    });
+  }
+  return gisReady;
+}
+
 function loadGis() {
   if (window.google && window.google.accounts) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -56,17 +84,21 @@ function loadGis() {
   });
 }
 
-// 回傳已登入的使用者（token 仍有效時），否則回傳 null
+// 回傳已登入的使用者（工作階段或 token 仍有效時），否則回傳 null
 export async function initAuth() {
-  await loadGis();
-  google.accounts.id.initialize({
-    client_id: CONFIG.GOOGLE_CLIENT_ID,
-    callback: handleCredential,
-    auto_select: true,
-    cancel_on_tap_outside: false,
-    use_fedcm_for_prompt: true
-  });
+  try {
+    session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+  } catch (e) {
+    session = null;
+  }
+  if (sessionValid()) {
+    user = session.user;
+    // 已登入時不必等 Google 元件（離線也能開）；背景載入供登出後重新登入使用
+    ensureGis().catch(() => {});
+    return user;
+  }
 
+  await ensureGis();
   let saved = null;
   try {
     saved = localStorage.getItem(TOKEN_KEY);
@@ -78,12 +110,26 @@ export async function initAuth() {
   return null;
 }
 
+function initGis() {
+  google.accounts.id.initialize({
+    client_id: CONFIG.GOOGLE_CLIENT_ID,
+    callback: handleCredential,
+    auto_select: true,
+    cancel_on_tap_outside: false,
+    use_fedcm_for_prompt: true
+  });
+}
+
 export function renderSignInButton(el) {
   el.innerHTML = '';
-  google.accounts.id.renderButton(el, {
-    theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', locale: 'zh-TW'
+  ensureGis().then(() => {
+    google.accounts.id.renderButton(el, {
+      theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', locale: 'zh-TW'
+    });
+    google.accounts.id.prompt();
+  }).catch(err => {
+    el.textContent = err.message;
   });
-  google.accounts.id.prompt();
 }
 
 export function onSignIn(cb) {
@@ -96,12 +142,13 @@ export function getUser() {
 
 // 過期時以 One Tap 自動重新登入；失敗則拋出錯誤由畫面顯示登入頁
 export function getIdToken() {
+  if (sessionValid()) return Promise.resolve(session.token);
   if (token && isFresh(token)) return Promise.resolve(token);
   if (!pendingRefresh) {
     let resolve, reject;
     const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
     pendingRefresh = { promise, resolve, reject };
-    google.accounts.id.prompt();
+    ensureGis().then(() => google.accounts.id.prompt()).catch(() => {});
     setTimeout(() => {
       if (pendingRefresh && pendingRefresh.promise === promise) {
         pendingRefresh = null;
@@ -117,8 +164,10 @@ export function getIdToken() {
 // 後台回報 token 無效時呼叫，強制下次重新取得
 export function invalidateToken() {
   token = null;
+  session = null;
   try {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(SESSION_KEY);
   } catch (e) { /* 忽略 */ }
 }
 

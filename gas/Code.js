@@ -29,8 +29,10 @@ function doPost(e) {
     const req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     const handler = ROUTES[req.action];
     if (!handler) throw new AppError_('BAD_ACTION', `未知的操作：${req.action}`);
-    const user = authenticate_(req.idToken);
-    return json_({ ok: true, data: handler(user, req.payload || {}) });
+    const { user, session } = authenticate_(req.idToken);
+    const res = { ok: true, data: handler(user, req.payload || {}) };
+    if (session) res.session = session;
+    return json_(res);
   } catch (err) {
     if (!err.code) console.error(err);
     return json_({ ok: false, code: err.code || 'SERVER_ERROR', error: err.code ? err.message : '伺服器發生錯誤，請稍後再試' });

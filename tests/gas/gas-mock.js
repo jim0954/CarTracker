@@ -90,10 +90,14 @@ function createContext(opts = {}) {
         return fmt.replace('yyyy', t.getUTCFullYear()).replace('MM', p(t.getUTCMonth() + 1)).replace('dd', p(t.getUTCDate()));
       },
       computeDigest: (alg, s) => Array.from(crypto.createHash('sha256').update(s).digest()),
-      base64EncodeWebSafe: (b) => Buffer.from(b.map(x => x & 255)).toString('base64url'),
+      base64EncodeWebSafe: (b) => (typeof b === 'string' ? Buffer.from(b, 'utf8') : Buffer.from(b.map(x => x & 255))).toString('base64url'),
+      base64DecodeWebSafe: (s) => Array.from(Buffer.from(s, 'base64url')).map(x => (x > 127 ? x - 256 : x)),
+      computeHmacSha256Signature: (v, k) => Array.from(crypto.createHmac('sha256', k).update(v).digest()).map(x => (x > 127 ? x - 256 : x)),
+      newBlob: (bytes) => ({ getDataAsString: () => Buffer.from(bytes.map(x => x & 255)).toString('utf8') }),
       DigestAlgorithm: { SHA_256: 'sha256' },
       Charset: { UTF_8: 'utf8' }
     },
+    PropertiesService: (() => { const m = new Map(); return { getScriptProperties: () => ({ getProperty: k => (m.has(k) ? m.get(k) : null), setProperty: (k, v) => m.set(k, v) }) }; })(),
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     CacheService: (() => { const m = new Map(); return { getScriptCache: () => ({ get: k => m.get(k) || null, put: (k, v) => m.set(k, v), remove: k => m.delete(k) }) }; })(),
     UrlFetchApp: {

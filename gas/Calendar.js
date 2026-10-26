@@ -27,11 +27,9 @@ function eventTitle_(vehicle, item) {
 }
 
 function eventDescription_(vehicle, item) {
-  const lines = [
-    `車輛：${vehicle.name}（${vehicle.plate}）`,
-    `建議保養里程：${Number(item.lastKm || 0) + Number(item.intervalKm || 0)} km`,
-    `上次更換：${item.lastKm || 0} km（${item.lastDate || '未填'}）`
-  ];
+  const lines = [`車輛：${vehicle.name}（${vehicle.plate}）`];
+  if (Number(item.intervalKm) > 0) lines.push(`建議保養里程：${Number(item.lastKm || 0) + Number(item.intervalKm)} km`);
+  lines.push(`上次更換：${item.lastKm || 0} km（${item.lastDate || '未填'}）`);
   if (item.notes) lines.push(`備註：${item.notes}`);
   const appUrl = getSetting_('APP_URL');
   lines.push('', '由 CarTracker 自動建立' + (appUrl ? `：${appUrl}` : ''));

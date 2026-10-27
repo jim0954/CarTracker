@@ -1,6 +1,35 @@
 // --- 身分驗證：Google ID Token + 成員白名單 ---
 
 const TOKEN_ISSUERS = ['accounts.google.com', 'https://accounts.google.com'];
+// 每 10 分鐘最多向 Google 驗證幾次：網址是公開的，避免被灌假 token 耗盡每日 UrlFetch 配額。
+// 成員平常用 30 天工作階段，只有登入時才需要向 Google 驗證，正常用量遠低於此
+const TOKENINFO_LIMIT_PER_10MIN = 100;
+
+function decodeJwtPayload_(token) {
+  const parts = String(token).split('.');
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return null;
+  try {
+    return JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1], Utilities.Charset.UTF_8)).getDataAsString('UTF-8'));
+  } catch (e) {
+    return null;
+  }
+}
+
+// 不打 API 的初步檢查：格式、對象、來源、期限；不符就直接拒絕
+function precheckIdToken_(idToken, clientId) {
+  const claims = decodeJwtPayload_(idToken);
+  if (!claims || claims.aud !== clientId || TOKEN_ISSUERS.indexOf(claims.iss) === -1 ||
+      !(Number(claims.exp) > Math.floor(Date.now() / 1000))) {
+    throw new AppError_('AUTH_INVALID', '登入已失效，請重新登入');
+  }
+}
+
+function countTokeninfoCall_(cache) {
+  const key = 'tokeninfo_' + Math.floor(Date.now() / 600000);
+  const count = Number(cache.get(key) || 0) + 1;
+  if (count > TOKENINFO_LIMIT_PER_10MIN) throw new AppError_('AUTH_INVALID', '登入驗證過於頻繁，請稍後再試');
+  cache.put(key, String(count), 900);
+}
 
 // 向 Google 驗證 ID Token，回傳 { email, name }；驗證結果快取到 token 過期前
 function verifyIdToken_(idToken) {
@@ -13,6 +42,8 @@ function verifyIdToken_(idToken) {
   const cached = cache.get(cacheKey);
   if (cached) return JSON.parse(cached);
 
+  precheckIdToken_(idToken, clientId);
+  countTokeninfoCall_(cache);
   const res = UrlFetchApp.fetch(
     'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken),
     { muteHttpExceptions: true }
@@ -51,6 +82,15 @@ function signSession_(body) {
   return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(body, sessionSecret_()));
 }
 
+// 固定時間比較，避免以回應時間差逐字猜簽章
+function safeEqual_(a, b) {
+  a = String(a);
+  b = String(b);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
 function issueSession_(user) {
   const expiresAt = Date.now() + SESSION_DAYS * DAY_MS;
   const body = Utilities.base64EncodeWebSafe(JSON.stringify({ e: user.email, n: user.name, x: expiresAt }), Utilities.Charset.UTF_8);
@@ -59,7 +99,7 @@ function issueSession_(user) {
 
 function verifySession_(token) {
   const parts = token.split('.');
-  if (parts.length !== 3 || signSession_(parts[1]) !== parts[2]) throw new AppError_('AUTH_INVALID', '登入已失效，請重新登入');
+  if (parts.length !== 3 || !safeEqual_(signSession_(parts[1]), parts[2])) throw new AppError_('AUTH_INVALID', '登入已失效，請重新登入');
   const p = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1], Utilities.Charset.UTF_8)).getDataAsString('UTF-8'));
   if (!(Number(p.x) > Date.now())) throw new AppError_('AUTH_INVALID', '登入已過期，請重新登入');
   return { email: String(p.e).toLowerCase(), name: p.n, expiresAt: Number(p.x) };

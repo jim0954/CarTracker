@@ -13,18 +13,23 @@ const tokens = {
   unverified: { aud: CLIENT, iss: 'accounts.google.com', email: 'owner@gmail.com', email_verified: 'false', exp: now + 3600 }
 };
 
+// 測試用 token 做成 JWT 形狀（header.payload.signature）；tokeninfo 模擬只認得這些
+const jwts = {};
+Object.keys(tokens).forEach(k => { jwts[k] = `eyJhbGciOiJSUzI1NiJ9.${Buffer.from(JSON.stringify(tokens[k])).toString('base64url')}.sig-${k}`; });
+const byJwt = new Map(Object.keys(jwts).map(k => [jwts[k], tokens[k]]));
+
 const ctx = createContext({
   dir,
   fetch: (url) => {
     const t = decodeURIComponent(url.split('id_token=')[1]);
-    const claims = tokens[t];
+    const claims = byJwt.get(t);
     return { getResponseCode: () => (claims ? 200 : 400), getContentText: () => JSON.stringify(claims || { error: 'invalid_token' }) };
   }
 });
 const G = ctx.__get;
 G('setup')();
 
-const call = (action, idToken, payload) => JSON.parse(G('doPost')({ postData: { contents: JSON.stringify({ action, idToken, payload }) } }).getContent());
+const call = (action, idToken, payload) => JSON.parse(G('doPost')({ postData: { contents: JSON.stringify({ action, idToken: jwts[idToken] || idToken, payload }) } }).getContent());
 
 // CLIENT_ID not set yet
 assert.strictEqual(call('bootstrap', 'good').code, 'SETUP');
@@ -32,8 +37,18 @@ G('setSetting_')('CLIENT_ID', CLIENT);
 
 assert.strictEqual(JSON.parse(G('doGet')().getContent()).ok, true);
 assert.strictEqual(call('bootstrap').code, 'AUTH_REQUIRED');
+// 格式不對、對象不對、已過期的 token 在本地就被擋下，不呼叫 Google
+const fetchesBefore = ctx._fetchLog.length;
 assert.strictEqual(call('bootstrap', 'garbage').code, 'AUTH_INVALID');
+assert.strictEqual(call('bootstrap', 'a.b.c').code, 'AUTH_INVALID');
 assert.strictEqual(call('bootstrap', 'wrongAud').code, 'AUTH_INVALID');
+const expiredJwt = `x.${Buffer.from(JSON.stringify({ ...tokens.good, exp: now - 10 })).toString('base64url')}.y`;
+assert.strictEqual(call('bootstrap', expiredJwt).code, 'AUTH_INVALID');
+assert.strictEqual(ctx._fetchLog.length, fetchesBefore, 'prechecks avoid tokeninfo calls');
+// 形狀正確但簽章是假的：交給 Google 判斷
+const forgedJwt = `x.${Buffer.from(JSON.stringify({ ...tokens.good, email: 'forged@gmail.com' })).toString('base64url')}.y`;
+assert.strictEqual(call('bootstrap', forgedJwt).code, 'AUTH_INVALID');
+assert.strictEqual(ctx._fetchLog.length, fetchesBefore + 1);
 assert.strictEqual(call('bootstrap', 'unverified').code, 'AUTH_INVALID');
 assert.strictEqual(call('bootstrap', 'stranger').code, 'NOT_MEMBER');
 assert.strictEqual(call('nope', 'good').code, 'BAD_ACTION');
@@ -95,5 +110,15 @@ ctx.svcBootstrap_ = () => { throw new Error('boom secret'); };
 const err = call('bootstrap', 'good');
 assert.strictEqual(err.code, 'SERVER_ERROR');
 assert.ok(!err.error.includes('secret'));
+
+// 向 Google 驗證的次數有上限，超過時拒絕而不是繼續耗用配額
+{
+  const cache = ctx.CacheService.getScriptCache();
+  cache.put('tokeninfo_' + Math.floor(Date.now() / 600000), '100');
+  const n = ctx._fetchLog.length;
+  const fresh = `x.${Buffer.from(JSON.stringify({ ...tokens.good, nonce: 'n' })).toString('base64url')}.z`;
+  assert.match(call('bootstrap', fresh).error, /頻繁/);
+  assert.strictEqual(ctx._fetchLog.length, n, 'rate limited');
+}
 
 console.log('auth/code tests passed');

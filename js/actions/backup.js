@@ -61,7 +61,11 @@ export function initBackupActions() {
       const typeText = typeMap[r.type] || r.type;
       const liters = r.details && r.details.liters ? r.details.liters : '';
       const unitPrice = r.details && r.details.pricePerLiter ? r.details.pricePerLiter : '';
-      const clean = (str) => `"${(str || '').replace(/"/g, '""')}"`;
+      // 開頭是 = + - @ 的文字在 Excel 會被當成公式執行，前面補 ' 當純文字
+      const clean = (str) => {
+        const text = String(str || '');
+        return `"${(/^[=+\-@\t\r]/.test(text) ? `'${text}` : text).replace(/"/g, '""')}"`;
+      };
 
       csvContent += `${r.date},${clean(v.name)},${clean(v.plate)},${typeText},${r.mileage},${clean(r.title)},${r.amount},${clean(r.vendor)},${liters},${unitPrice},${clean(r.notes)}\n`;
     });

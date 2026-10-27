@@ -99,6 +99,9 @@ function initCloudMode() {
   document.getElementById('import-desc').textContent = '以備份檔取代你在雲端的所有資料';
   document.getElementById('btn-email-backup').classList.remove('hidden');
 
+  // 點左上角標題也可以重新整理
+  document.getElementById('btn-brand').addEventListener('click', () => document.getElementById('btn-sync').click());
+
   document.getElementById('btn-sync').addEventListener('click', () => {
     if (store.hasPendingSync()) return;
     store.reloadFromCloud()

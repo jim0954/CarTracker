@@ -2,7 +2,7 @@
 // 本站檔案：網路優先（確保拿到最新版），離線時改用快取
 // CDN 檔案（Tailwind、FontAwesome、Chart.js）：先用快取，背景更新
 // Google 登入與 Apps Script 請求不經過快取
-const CACHE = 'cartracker-v5';
+const CACHE = 'cartracker-v6';
 
 const APP_SHELL = [
   './',

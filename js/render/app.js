@@ -12,7 +12,7 @@ export function renderApp() {
   // 尚未建立車輛時只顯示歡迎畫面
   const isEmpty = !vehicle;
   document.getElementById('empty-welcome').classList.toggle('hidden', !isEmpty);
-  ['hero-section', 'main-content', 'vehicle-select-wrap', 'btn-quick-mileage', 'mobile-nav', 'btn-fab-record'].forEach(id => {
+  ['hero-section', 'main-content', 'vehicle-select-wrap', 'mobile-nav', 'btn-fab-record'].forEach(id => {
     document.getElementById(id).classList.toggle('hidden', isEmpty);
   });
   if (isEmpty) return;

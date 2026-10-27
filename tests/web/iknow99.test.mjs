@@ -5,17 +5,17 @@ import { convertIknow99, isIknow99Export } from '../../js/iknow99.js';
 const sub = (Name, ValidDistance, LifeTime, extra = {}) => ({ Name, ValidDistance, LifeTime, Qty: 1, UnitPrice: 0, Spec: '', ...extra });
 const captures = [
   // 第 1 頁與第 2 頁（沒有重疊，以相同的 Count 合併）
-  { url: '/user.method/car_form', data: { Count: { Care: 3, Fuel: 1, Expense: 0 }, Forms: [
+  { data: { Count: { Care: 3, Fuel: 1, Expense: 0 }, Forms: [
     { Id: 4, Type: 2, Date: '2026-03-01 02:00', Odometer: 1200, Amount: 120, Title: 'true,4,30,0,0,0,95無鉛,100' },
     { Id: 3, Type: 1, Date: '2026-02-01 02:00', Odometer: 1100, Amount: 500, Title: '好車行' }
   ] } },
-  { url: '/user.method/car_form', data: { Count: { Care: 3, Fuel: 1, Expense: 0 }, Forms: [
+  { data: { Count: { Care: 3, Fuel: 1, Expense: 0 }, Forms: [
     { Id: 2, Type: 1, Date: '2025-12-31 17:00', Odometer: 1000, Amount: 0, Title: '沒點開' },
     { Id: 1, Type: 1, Date: '2020-01-01 16:00', Odometer: 0, Amount: 0, Title: '新車保養週期' }
   ] } },
-  { url: '/user.method/car_form', data: { Form: { Id: 1, Type: 1, SubForm: [sub('機油', 1000, 6), sub('電瓶', 0, 36), sub('坐墊', 0, 0)] } } },
-  { url: '/user.method/car_form', data: { Form: { Id: 3, Type: 1, SubForm: [sub('機油', 1000, 6, { Spec: '10W40', UnitPrice: 250 }), sub('車牌框', 0, 0)] } } },
-  { url: '/user.method/car_property', data: { Components: [
+  { data: { Form: { Id: 1, Type: 1, SubForm: [sub('機油', 1000, 6), sub('電瓶', 0, 36), sub('坐墊', 0, 0)] } } },
+  { data: { Form: { Id: 3, Type: 1, SubForm: [sub('機油', 1000, 6, { Spec: '10W40', UnitPrice: 250 }), sub('車牌框', 0, 0)] } } },
+  { data: { Components: [
     { ...sub('電瓶', 0, 30), FormId: 1, Odometer: 0, Date: '2020-01-01 16:00' }
   ] } }
 ];

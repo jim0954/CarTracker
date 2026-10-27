@@ -58,10 +58,36 @@ assert.strictEqual(call('bootstrap', 'good').data.vehicles.length, 0, 'owner doe
 assert.strictEqual(call('bootstrap', 'family').data.user.name, '小孩');
 assert.strictEqual(call('deleteVehicle', 'good', { id: v.data.id }).code, 'NOT_FOUND');
 
+// Google 登入後回傳 30 天工作階段；之後用工作階段呼叫不需再驗證 Google token
+const first = call('bootstrap', 'family');
+assert.ok(first.session && first.session.token.startsWith('s.'), 'session issued');
+assert.ok(first.session.expiresAt - Date.now() > 29 * 24 * 3600 * 1000);
+assert.ok(!('session' in first.data.user), 'session not leaked into data');
+const kidSession = first.session.token;
+const fetches = ctx._fetchLog.length;
+const viaSession = call('bootstrap', kidSession);
+assert.ok(viaSession.ok);
+assert.strictEqual(viaSession.data.user.email, 'kid@gmail.com');
+assert.strictEqual(viaSession.session, undefined, 'fresh session not renewed');
+assert.strictEqual(ctx._fetchLog.length, fetches, 'no Google verification for sessions');
+
+// 竄改或過期的工作階段無效
+const [, body, sig] = kidSession.split('.');
+const forged = Buffer.from(JSON.stringify({ e: 'owner@gmail.com', n: 'x', x: Date.now() + 1e9 })).toString('base64url');
+assert.strictEqual(call('bootstrap', `s.${forged}.${sig}`).code, 'AUTH_INVALID', 'tampered payload');
+assert.strictEqual(call('bootstrap', `s.${body}.AAAA`).code, 'AUTH_INVALID', 'bad signature');
+const sign = b => Buffer.from(require('crypto').createHmac('sha256', ctx.PropertiesService.getScriptProperties().getProperty('SESSION_SECRET')).update(b).digest()).toString('base64url');
+const expired = Buffer.from(JSON.stringify({ e: 'kid@gmail.com', n: 'Kid', x: Date.now() - 1000 })).toString('base64url');
+assert.strictEqual(call('bootstrap', `s.${expired}.${sign(expired)}`).code, 'AUTH_INVALID', 'expired');
+// 快到期（剩 10 天）時換發新的
+const soon = Buffer.from(JSON.stringify({ e: 'kid@gmail.com', n: 'Kid', x: Date.now() + 10 * 24 * 3600 * 1000 })).toString('base64url');
+assert.ok(call('bootstrap', `s.${soon}.${sign(soon)}`).session, 'renewed near expiry');
+
 const m2 = G('readTable_')('members');
 const kidRow = m2.rows.find(r => r.email === 'kid@gmail.com');
 G('updateRow_')(m2, kidRow._row, { enabled: false });
 assert.strictEqual(call('bootstrap', 'family').code, 'NOT_MEMBER', 'disable takes effect immediately');
+assert.strictEqual(call('bootstrap', kidSession).code, 'NOT_MEMBER', 'disable also blocks sessions');
 
 // server error hides details
 const orig = G('svcBootstrap_');

@@ -1,7 +1,7 @@
 // --- 呼叫 Google Apps Script 後台 ---
 // 以 text/plain 送出 JSON，屬於「簡單請求」，不會觸發 CORS 預檢。
 import { CONFIG } from './config.js';
-import { getIdToken, invalidateToken } from './auth.js';
+import { getIdToken, invalidateToken, setSession } from './auth.js';
 
 export class ApiError extends Error {
   constructor(code, message) {
@@ -28,6 +28,7 @@ export async function call(action, payload = {}, retry = true) {
   if (!res.ok) throw new ApiError('NETWORK', `伺服器回應錯誤 (${res.status})`);
 
   const body = await res.json();
+  if (body.session) setSession(body.session);
   if (body.ok) return body.data;
 
   // token 被後台判定無效時重新取得一次

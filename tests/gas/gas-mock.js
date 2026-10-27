@@ -95,7 +95,10 @@ function createContext(opts = {}) {
       base64EncodeWebSafe: (b) => (typeof b === 'string' ? Buffer.from(b, 'utf8') : Buffer.from(b.map(x => x & 255))).toString('base64url'),
       base64DecodeWebSafe: (s) => Array.from(Buffer.from(s, 'base64url')).map(x => (x > 127 ? x - 256 : x)),
       computeHmacSha256Signature: (v, k) => Array.from(crypto.createHmac('sha256', k).update(v).digest()).map(x => (x > 127 ? x - 256 : x)),
-      newBlob: (bytes) => ({ getDataAsString: () => Buffer.from(bytes.map(x => x & 255)).toString('utf8') }),
+      newBlob: (data, type, name) => ({
+        getDataAsString: () => (typeof data === 'string' ? data : Buffer.from(data.map(x => x & 255)).toString('utf8')),
+        getContentType: () => type, getName: () => name
+      }),
       DigestAlgorithm: { SHA_256: 'sha256' },
       Charset: { UTF_8: 'utf8' }
     },

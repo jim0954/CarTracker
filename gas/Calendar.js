@@ -56,13 +56,23 @@ function syncItemEvent_(email, item, vehicle, member) {
 
     const cal = getCalendar_();
     const date = parseDate_(item.dueDate);
-    let event = item.calendarEventId ? cal.getEventById(item.calendarEventId) : null;
+    // 事件可能已在日曆上被手動刪除：取不到或更新失敗就重新建立，避免卡在無效的事件 ID
+    let event = null;
+    if (item.calendarEventId) {
+      try {
+        event = cal.getEventById(item.calendarEventId);
+        if (event) {
+          event.setTitle(eventTitle_(vehicle, item));
+          event.setDescription(eventDescription_(vehicle, item));
+          event.setAllDayDate(date);
+        }
+      } catch (err) {
+        console.warn('日曆事件無法更新，重新建立', err);
+        event = null;
+      }
+    }
 
-    if (event) {
-      event.setTitle(eventTitle_(vehicle, item));
-      event.setDescription(eventDescription_(vehicle, item));
-      event.setAllDayDate(date);
-    } else {
+    if (!event) {
       // 管理者自己的項目不需要邀請（日曆本來就在自己帳號）
       const isOwner = email === String(Session.getEffectiveUser().getEmail()).toLowerCase();
       event = cal.createAllDayEvent(eventTitle_(vehicle, item), date, {

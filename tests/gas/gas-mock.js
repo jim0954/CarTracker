@@ -30,7 +30,9 @@ function makeSheet(name) {
       };
       return range;
     },
-    deleteRow: (r) => { sh.data.splice(r - 1, 1); sh.maxRows--; },
+    deleteCalls: 0,
+    deleteRow: (r) => { sh.deleteCalls++; sh.data.splice(r - 1, 1); sh.maxRows--; },
+    deleteRows: (r, n) => { sh.deleteCalls++; sh.data.splice(r - 1, n); sh.maxRows -= n; },
     insertRowsAfter: (after, n) => { sh.maxRows += n; },
     setFrozenRows: () => {}
   };

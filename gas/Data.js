@@ -208,9 +208,20 @@ function updateRow_(table, rowNum, obj) {
   });
 }
 
-// 由下往上刪，避免列號位移
+// 由下往上刪，避免列號位移；連續的列合併成一次 deleteRows，大量刪除（覆蓋匯入）時不會逐列呼叫
 function deleteRows_(table, rowNums) {
-  rowNums.slice().sort((a, b) => b - a).forEach(n => table.sheet.deleteRow(n));
+  const sorted = [...new Set(rowNums)].sort((a, b) => b - a);
+  let i = 0;
+  while (i < sorted.length) {
+    let start = sorted[i];
+    let count = 1;
+    while (i + count < sorted.length && sorted[i + count] === start - 1) {
+      start--;
+      count++;
+    }
+    table.sheet.deleteRows(start, count);
+    i += count;
+  }
 }
 
 function newId_(prefix) {

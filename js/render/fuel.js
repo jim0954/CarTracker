@@ -12,26 +12,33 @@ export function renderFuelTab(vehicle) {
   let calculatedIntervals = [];
   const intervalInfo = new Map(); // 記錄 id → 區間里程與油耗（不寫回資料）
 
-  for (let i = 0; i < fuelRecords.length; i++) {
-    const curr = fuelRecords[i];
+  // 加滿法：兩次「加滿」之間的里程 ÷ 這段期間（含中間未加滿）加進去的總公升數
+  // 中途有未加滿只會讓油耗算在下一次加滿，不會讓區間被丟掉
+  let lastFull = null;
+  let litersSinceFull = 0;
+  let costSinceFull = 0;
+  for (const curr of fuelRecords) {
     totalFuelCost += Number(curr.amount) || 0;
     const liters = curr.details ? Number(curr.details.liters) || 0 : 0;
     totalLiters += liters;
+    litersSinceFull += liters;
+    costSinceFull += Number(curr.amount) || 0;
 
     let intervalDistance = null;
     let kmPerLiter = null;
-
-    // Calculate economy between full tank records
-    if (i > 0 && curr.details && curr.details.isFullTank && fuelRecords[i - 1].details && fuelRecords[i - 1].details.isFullTank) {
-      intervalDistance = curr.mileage - fuelRecords[i - 1].mileage;
-      if (intervalDistance > 0 && liters > 0) {
-        kmPerLiter = (intervalDistance / liters).toFixed(1);
-        calculatedIntervals.push({
-          dist: intervalDistance,
-          liters: liters,
-          cost: Number(curr.amount) || 0
-        });
+    if (curr.details && curr.details.isFullTank) {
+      if (lastFull) {
+        intervalDistance = curr.mileage - lastFull.mileage;
+        if (intervalDistance > 0 && litersSinceFull > 0) {
+          kmPerLiter = (intervalDistance / litersSinceFull).toFixed(1);
+          calculatedIntervals.push({ dist: intervalDistance, liters: litersSinceFull, cost: costSinceFull });
+        }
       }
+      lastFull = curr;
+      litersSinceFull = 0;
+      costSinceFull = 0;
+    } else if (lastFull) {
+      intervalDistance = curr.mileage - lastFull.mileage;
     }
     intervalInfo.set(curr.id, { dist: intervalDistance, kmPerLiter });
   }

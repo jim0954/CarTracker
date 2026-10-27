@@ -8,17 +8,34 @@ import { recordParts } from '../parts.js';
 // --- 保養項目明細編輯 ---
 const inputCls = 'bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none';
 
+// 明細與保養項目的連結：從標籤加入時記下項目 ID，之後改名稱（例如「機油」→「美孚機油 5W-30」）仍會連結；
+// 手動輸入的明細則以名稱相同的項目連結
+let editingItems = [];
+
 function partRows() {
   return [...document.querySelectorAll('#record-parts .part-row')];
 }
 
+function rowItemId(row) {
+  const id = row.dataset.itemId;
+  if (id && editingItems.some(it => it.id === id)) return id;
+  const name = row.querySelector('.part-name').value.trim();
+  const byName = editingItems.find(it => it.name === name);
+  return byName ? byName.id : '';
+}
+
 function readParts() {
   return partRows()
-    .map(row => ({
-      name: row.querySelector('.part-name').value.trim(),
-      spec: row.querySelector('.part-spec').value.trim(),
-      price: parseFloat(row.querySelector('.part-price').value) || 0
-    }))
+    .map(row => {
+      const part = {
+        name: row.querySelector('.part-name').value.trim(),
+        spec: row.querySelector('.part-spec').value.trim(),
+        price: parseFloat(row.querySelector('.part-price').value) || 0
+      };
+      const itemId = rowItemId(row);
+      if (itemId) part.itemId = itemId;
+      return part;
+    })
     .filter(p => p.name);
 }
 
@@ -29,9 +46,9 @@ function syncAmountFromParts() {
 }
 
 function refreshChips() {
-  const names = new Set(readParts().map(p => p.name));
+  const linked = new Set(partRows().map(rowItemId));
   document.querySelectorAll('#record-item-chips button').forEach(chip => {
-    const active = names.has(chip.dataset.name);
+    const active = linked.has(chip.dataset.id);
     chip.className = `px-2.5 py-1 rounded-full text-xs border transition ${active
       ? 'bg-emerald-600 border-emerald-500 text-white'
       : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'}`;
@@ -49,6 +66,7 @@ function addPartRow(part = {}) {
     </div>
     <input type="text" class="part-spec ${inputCls} text-xs" placeholder="規格 / 說明（選填）">
   `;
+  row.dataset.itemId = part.itemId || '';
   row.querySelector('.part-name').value = part.name || '';
   row.querySelector('.part-spec').value = part.spec || '';
   row.querySelector('.part-price').value = part.price ? part.price : '';
@@ -64,26 +82,27 @@ function addPartRow(part = {}) {
 }
 
 // 點保養項目標籤：未加入就新增一列，已加入就移除
-function toggleItemPart(name) {
-  const existing = partRows().find(row => row.querySelector('.part-name').value.trim() === name);
+function toggleItemPart(item) {
+  const existing = partRows().find(row => rowItemId(row) === item.id);
   if (existing) {
     existing.remove();
     syncAmountFromParts();
   } else {
-    addPartRow({ name }).querySelector('.part-price').focus();
+    addPartRow({ name: item.name, itemId: item.id }).querySelector('.part-price').focus();
   }
   refreshChips();
 }
 
 function populateParts(vehicle, parts) {
+  editingItems = store.getItems(vehicle.id);
   const chips = document.getElementById('record-item-chips');
   chips.innerHTML = '';
-  store.getItems(vehicle.id).forEach(it => {
+  editingItems.forEach(it => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.dataset.name = it.name;
+    chip.dataset.id = it.id;
     chip.textContent = it.name;
-    chip.addEventListener('click', () => toggleItemPart(it.name));
+    chip.addEventListener('click', () => toggleItemPart(it));
     chips.appendChild(chip);
   });
   document.getElementById('record-parts').innerHTML = '';
@@ -125,7 +144,7 @@ export function openRecordModalForType(type, prefillTitle = '', prefillItemIds =
   if (radio) radio.checked = true;
   toggleRecordTypeSections(type);
 
-  const prefillParts = prefillItemIds.map(id => store.getItem(id)).filter(Boolean).map(it => ({ name: it.name }));
+  const prefillParts = prefillItemIds.map(id => store.getItem(id)).filter(Boolean).map(it => ({ name: it.name, itemId: it.id }));
   populateParts(v, prefillParts);
   openModal('modal-record');
 }
@@ -225,9 +244,8 @@ export function initRecordActions() {
         isFullTank: document.getElementById('fuel-input-full').checked
       };
     } else if (type === 'maintenance') {
-      // 與保養項目同名的明細，儲存時會更新該項目的上次更換
-      const names = new Set(parts.map(p => p.name));
-      const itemIds = store.getItems(v.id).filter(it => names.has(it.name)).map(it => it.id);
+      // 有連結保養項目的明細，儲存時會更新該項目的上次更換
+      const itemIds = [...new Set(parts.map(p => p.itemId).filter(Boolean))];
       details = { itemIds, parts };
     }
 

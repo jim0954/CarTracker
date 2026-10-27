@@ -1,6 +1,6 @@
 // --- 分頁 1：保養項目 ---
 import * as store from '../store.js';
-import { formatNumber, escapeHtml } from '../utils.js';
+import { formatNumber, escapeHtml, parseDate, addMonths, daysBetween, todayStr } from '../utils.js';
 import { recordParts } from '../parts.js';
 
 function toYmd(date) {
@@ -10,7 +10,7 @@ function toYmd(date) {
 // 「加入 Google 日曆」連結：以預計到期日（雲端推算）或月數到期日建立全天事件
 // 只看里程且尚無推算到期日時無法決定日期，回傳空字串
 function calendarUrl(vehicle, item, fallbackDate, nextMileage) {
-  const due = item.dueDate ? new Date(`${item.dueDate}T00:00:00`) : fallbackDate;
+  const due = item.dueDate ? parseDate(item.dueDate) : fallbackDate;
   if (!due) return '';
   const end = new Date(due);
   end.setDate(end.getDate() + 1);
@@ -32,7 +32,8 @@ function calendarUrl(vehicle, item, fallbackDate, nextMileage) {
 // 依里程與月數推算狀態；週期可只設其中一個（0 或空白代表不看該條件）
 function itemStatus(vehicle, item) {
   const hasKm = Number(item.intervalKm) > 0;
-  const hasMonths = Number(item.intervalMonths) > 0 && !!item.lastDate;
+  const lastDate = parseDate(item.lastDate);
+  const hasMonths = Number(item.intervalMonths) > 0 && !!lastDate;
 
   const nextMileage = hasKm ? item.lastKm + Number(item.intervalKm) : null;
   const remainingKm = hasKm ? nextMileage - vehicle.currentMileage : Infinity;
@@ -42,12 +43,10 @@ function itemStatus(vehicle, item) {
   let diffDays = Infinity;
   let timePercent = 0;
   if (hasMonths) {
-    const lastDate = new Date(item.lastDate);
-    nextDate = new Date(lastDate);
-    nextDate.setMonth(nextDate.getMonth() + Number(item.intervalMonths));
-    const today = new Date();
-    diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
-    timePercent = ((today - lastDate) / (nextDate - lastDate)) * 100;
+    nextDate = addMonths(lastDate, Number(item.intervalMonths));
+    const today = parseDate(todayStr());
+    diffDays = daysBetween(today, nextDate);
+    timePercent = (daysBetween(lastDate, today) / daysBetween(lastDate, nextDate)) * 100;
   }
   const progress = Math.min(100, Math.max(0, kmPercent, timePercent));
 
@@ -79,7 +78,8 @@ export function itemHistory(item, records) {
   const list = records
     .filter(r => r.type === 'maintenance')
     .map(record => {
-      const part = recordParts(record).parts.find(p => p.name === item.name);
+      const parts = recordParts(record).parts;
+      const part = parts.find(p => p.itemId === item.id) || parts.find(p => p.name === item.name);
       const linked = (record.details && record.details.itemIds || []).includes(item.id);
       return part || linked ? { record, part } : null;
     })

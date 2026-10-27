@@ -1,6 +1,6 @@
 // --- 資料備份：匯出 JSON / CSV、匯入、重設示範資料 ---
 import * as store from '../store.js';
-import { showToast, openModal, closeModal, openConfirmModal } from '../utils.js';
+import { showToast, openModal, closeModal, openConfirmModal, todayStr } from '../utils.js';
 import { showLoading, hideLoading } from '../session.js';
 import { renderApp } from '../render/app.js';
 import { isIknow99Export, convertIknow99 } from '../iknow99.js';
@@ -20,6 +20,17 @@ async function runImport(task, successMessage) {
   }
 }
 
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function initBackupActions() {
   document.getElementById('btn-open-backup-modal').addEventListener('click', () => {
     openModal('modal-backup');
@@ -27,14 +38,9 @@ export function initBackupActions() {
 
   // 1. 匯出 JSON
   document.getElementById('btn-export-json').addEventListener('click', () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(store.exportData(), null, 2));
-    const downloadAnchor = document.createElement('a');
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `cartracker_backup_${dateStr}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    // 用 Blob 下載：data: 網址在部分手機瀏覽器有長度上限，資料多時會下載失敗
+    const blob = new Blob([JSON.stringify(store.exportData(), null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `cartracker_backup_${todayStr().replace(/-/g, '')}.json`);
     showToast('已匯出 JSON 備份檔！');
   });
 
@@ -60,14 +66,7 @@ export function initBackupActions() {
       csvContent += `${r.date},${clean(v.name)},${clean(v.plate)},${typeText},${r.mileage},${clean(r.title)},${r.amount},${clean(r.vendor)},${liters},${unitPrice},${clean(r.notes)}\n`;
     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${v.plate}_用車明細表.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    downloadBlob(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }), `${v.plate || v.name}_用車明細表.csv`);
     showToast('已匯出 CSV 試算表！');
   });
 

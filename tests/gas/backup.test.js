@@ -76,4 +76,22 @@ const due = today.getDate() <= 28 && [1, 4, 7, 10].includes(today.getMonth() + 1
 ctx.PropertiesService.getScriptProperties().setProperty('BACKUP_LAST', '');
 G('dailyJob')();
 assert.strictEqual(backups().length, due ? 3 : 2, 'dailyJob follows the schedule');
+// 網頁手動寄送：只寄給登入者本人，10 分鐘內限一次
+const before = backups().length;
+const res = plain(G('svcEmailBackup_')(K));
+assert.deepStrictEqual(res, { to: K });
+assert.strictEqual(backups().length, before + 1);
+assert.strictEqual(backups()[backups().length - 1].to, K);
+assert.throws(() => G('svcEmailBackup_')(K), e => e.code === 'RATE_LIMIT');
+assert.strictEqual(backups().length, before + 1, 'cooldown');
+assert.throws(() => G('svcEmailBackup_')('owner@gmail.com'), e => e.code === 'NO_DATA', 'no vehicles');
+// 寄信失敗（例如額度用完）回傳明確錯誤，且不進入冷卻
+const send = ctx.MailApp.sendEmail;
+ctx.MailApp.sendEmail = () => { throw new Error('quota'); };
+G('svcSaveVehicle_')('owner@gmail.com', { name: 'Car', plate: 'C', type: 'car', currentMileage: 0 });
+assert.throws(() => G('svcEmailBackup_')('owner@gmail.com'), e => e.code === 'MAIL');
+ctx.MailApp.sendEmail = send;
+G('svcEmailBackup_')('owner@gmail.com');
+assert.strictEqual(backups()[backups().length - 1].to, 'owner@gmail.com');
+assert.ok(G('ROUTES').emailBackup, 'route registered');
 console.log('✓ backup.test.js');

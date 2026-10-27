@@ -56,6 +56,26 @@ function sendBackupMail_(email, name) {
   return true;
 }
 
+// 網頁「寄一份備份到我的信箱」：只寄給登入者本人，同一人 10 分鐘內限寄一次（避免耗盡每日寄信額度）
+const BACKUP_MAIL_COOLDOWN_SEC = 600;
+
+function svcEmailBackup_(email) {
+  const cache = CacheService.getScriptCache();
+  const key = 'backupmail_' + email;
+  if (cache.get(key)) throw new AppError_('RATE_LIMIT', '剛剛已寄過備份，請 10 分鐘後再試');
+  let sent;
+  try {
+    const member = readTable_('members').rows.find(m => m.email.toLowerCase() === email);
+    sent = sendBackupMail_(email, member && member.name);
+  } catch (err) {
+    console.error(`寄送備份給 ${email} 失敗`, err);
+    throw new AppError_('MAIL', '備份信寄送失敗，今天的寄信額度可能已用完，請改用「匯出 JSON 備份檔」');
+  }
+  if (!sent) throw new AppError_('NO_DATA', '目前沒有任何車輛資料可以備份');
+  cache.put(key, '1', BACKUP_MAIL_COOLDOWN_SEC);
+  return { to: email };
+}
+
 // 試算表選單：立即寄一份自己的備份（確認備份信內容用）
 function sendBackupToMe() {
   const email = Session.getEffectiveUser().getEmail().toLowerCase();

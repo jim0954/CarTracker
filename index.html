@@ -692,6 +692,20 @@
           <i class="fa-solid fa-file-arrow-down text-slate-400"></i>
         </button>
 
+        <!-- Email backup（雲端模式） -->
+        <button id="btn-email-backup" class="hidden flex items-center justify-between p-3.5 rounded-xl bg-slate-900 hover:bg-slate-750 border border-slate-700 text-slate-200 text-sm font-medium transition">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 shrink-0 rounded-lg bg-violet-500/20 text-violet-400 flex items-center justify-center">
+              <i class="fa-solid fa-envelope"></i>
+            </div>
+            <div class="text-left">
+              <span class="font-bold text-white block">寄一份備份到我的信箱</span>
+              <span class="text-xs text-slate-400">備份檔以附件寄到登入的 Gmail，可用「匯入」還原</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-paper-plane text-slate-400"></i>
+        </button>
+
         <!-- Import JSON -->
         <div class="relative">
           <input type="file" id="input-import-file" accept=".json" class="hidden">

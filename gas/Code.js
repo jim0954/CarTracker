@@ -12,7 +12,8 @@ const ROUTES = {
   deleteItem: (user, p) => svcDeleteItem_(user.email, p.id),
   saveRecord: (user, p) => svcSaveRecord_(user.email, p.record),
   deleteRecord: (user, p) => svcDeleteRecord_(user.email, p.id),
-  importAll: (user, p) => svcImportAll_(user.email, p.data, !!p.append)
+  importAll: (user, p) => svcImportAll_(user.email, p.data, !!p.append),
+  emailBackup: (user) => svcEmailBackup_(user.email)
 };
 
 function json_(obj) {

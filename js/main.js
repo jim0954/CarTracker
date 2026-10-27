@@ -97,6 +97,7 @@ function initCloudMode() {
   document.getElementById('backup-desc').textContent =
     '資料儲存在雲端（Google 試算表），換手機或電腦登入同一個 Google 帳號即可使用。也可以匯出備份檔自行保存。';
   document.getElementById('import-desc').textContent = '以備份檔取代你在雲端的所有資料';
+  document.getElementById('btn-email-backup').classList.remove('hidden');
 
   document.getElementById('btn-sync').addEventListener('click', () => {
     if (store.hasPendingSync()) return;

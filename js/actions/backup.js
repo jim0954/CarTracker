@@ -74,6 +74,20 @@ export function initBackupActions() {
     showToast('已匯出 CSV 試算表！');
   });
 
+  // 2-1. 寄一份備份到我的信箱（雲端模式）
+  document.getElementById('btn-email-backup').addEventListener('click', async () => {
+    closeModal('modal-backup');
+    showLoading('備份信寄送中…');
+    try {
+      const { to } = await store.emailBackup();
+      showToast(`備份已寄到 ${to}`);
+    } catch (err) {
+      showToast(err.message || '寄送失敗', 'error');
+    } finally {
+      hideLoading();
+    }
+  });
+
   // 3. 匯入 JSON
   document.getElementById('btn-trigger-import').addEventListener('click', () => {
     document.getElementById('input-import-file').click();

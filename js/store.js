@@ -402,6 +402,15 @@ export function isValidBackup(data) {
     && !(data.schemaVersion > SCHEMA_VERSION);
 }
 
+// 雲端模式：請後台把登入者的資料寄到自己的信箱；先補送暫存的變更，備份才是最新的
+export async function emailBackup() {
+  if (outbox.length && !(await flushOutbox())) {
+    throw new api.ApiError('NETWORK', `還有 ${outbox.length} 筆變更尚未上傳，連線後再寄備份`);
+  }
+  await syncQueue;
+  return api.call('emailBackup');
+}
+
 // 雲端模式會以 data 取代登入者在雲端的所有資料（等待後台完成）
 export async function importData(data) {
   if (isCloudMode) {

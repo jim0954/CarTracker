@@ -1,10 +1,13 @@
 // --- Google 登入（Google Identity Services）---
 // Google ID Token 只有 1 小時，手機（尤其 iPhone）常無法自動續登。
 // 後台驗證 Google 登入後會回傳 30 天的工作階段，之後的請求都改用它，到期前自動換新。
+// 「在此裝置保持登入」：勾選時存在 localStorage（關掉瀏覽器仍登入）；
+// 不勾選時存在 sessionStorage，關掉瀏覽器或分頁就登出（共用裝置用）。
 import { CONFIG } from './config.js';
 
 const TOKEN_KEY = 'cartracker_id_token';
 const SESSION_KEY = 'cartracker_session';
+const REMEMBER_KEY = 'cartracker_remember'; // 只記住這台裝置上次的勾選，不含個人資料
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const REFRESH_TIMEOUT_MS = 20000;
 
@@ -13,6 +16,55 @@ let session = null; // { token, expiresAt, user }
 let user = null;
 let pendingRefresh = null;
 const signInListeners = [];
+
+let remember = (() => {
+  try {
+    return localStorage.getItem(REMEMBER_KEY) !== '0';
+  } catch (e) {
+    return true;
+  }
+})();
+
+export function getRememberLogin() {
+  return remember;
+}
+
+export function setRememberLogin(value) {
+  remember = !!value;
+  try {
+    localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0');
+  } catch (e) { /* 忽略 */ }
+}
+
+// 這次登入的資料是否保留在裝置上（雲端資料快取也依此決定存放位置）
+export function isPersistentLogin() {
+  return remember;
+}
+
+function loginStorage() {
+  return remember ? localStorage : sessionStorage;
+}
+
+function saveLogin(key, value) {
+  try {
+    loginStorage().setItem(key, value);
+    (remember ? sessionStorage : localStorage).removeItem(key);
+  } catch (e) { /* 無痕模式等情況可忽略 */ }
+}
+
+// 先找保持登入的，再找只限這次的；找到哪一種就沿用哪一種
+function readLogin(key) {
+  for (const [storage, persistent] of [[localStorage, true], [sessionStorage, false]]) {
+    try {
+      const value = storage.getItem(key);
+      if (value) {
+        remember = persistent;
+        return value;
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+  return null;
+}
 
 function decodeJwt(jwt) {
   const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -37,22 +89,20 @@ function sessionValid() {
 export function setSession({ token: sessionToken, expiresAt }) {
   if (!user) return;
   session = { token: sessionToken, expiresAt, user };
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch (e) { /* 無痕模式等情況可忽略 */ }
+  saveLogin(SESSION_KEY, JSON.stringify(session));
 }
 
 function setToken(jwt) {
   token = jwt;
   const claims = decodeJwt(jwt);
   user = { email: claims.email, name: claims.name || claims.email, picture: claims.picture || '' };
-  try {
-    localStorage.setItem(TOKEN_KEY, jwt);
-  } catch (e) { /* 無痕模式等情況可忽略 */ }
+  saveLogin(TOKEN_KEY, jwt);
 }
 
 function handleCredential(response) {
   setToken(response.credential);
+  // 不保持登入時，下次開啟不要讓 Google 自動幫忙登入
+  if (!remember && window.google && window.google.accounts) google.accounts.id.disableAutoSelect();
   if (pendingRefresh) {
     pendingRefresh.resolve(token);
     pendingRefresh = null;
@@ -87,7 +137,7 @@ function loadGis() {
 // 回傳已登入的使用者（工作階段或 token 仍有效時），否則回傳 null
 export async function initAuth() {
   try {
-    session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    session = JSON.parse(readLogin(SESSION_KEY) || 'null');
   } catch (e) {
     session = null;
   }
@@ -99,10 +149,7 @@ export async function initAuth() {
   }
 
   await ensureGis();
-  let saved = null;
-  try {
-    saved = localStorage.getItem(TOKEN_KEY);
-  } catch (e) { /* 忽略 */ }
+  const saved = readLogin(TOKEN_KEY);
   if (saved && isFresh(saved)) {
     setToken(saved);
     return user;
@@ -165,10 +212,12 @@ export function getIdToken() {
 export function invalidateToken() {
   token = null;
   session = null;
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(SESSION_KEY);
-  } catch (e) { /* 忽略 */ }
+  [localStorage, sessionStorage].forEach(storage => {
+    try {
+      storage.removeItem(TOKEN_KEY);
+      storage.removeItem(SESSION_KEY);
+    } catch (e) { /* 忽略 */ }
+  });
 }
 
 export function signOut() {

@@ -1,5 +1,5 @@
 // --- 登入流程與畫面（雲端模式）---
-import { initAuth, renderSignInButton, onSignIn, signOut } from './auth.js';
+import { initAuth, renderSignInButton, onSignIn, signOut, getRememberLogin, setRememberLogin } from './auth.js';
 
 const $ = id => document.getElementById(id);
 
@@ -9,6 +9,7 @@ export function showLogin(message = '') {
   const msg = $('login-message');
   msg.textContent = message;
   msg.classList.toggle('hidden', !message);
+  $('login-remember').checked = getRememberLogin();
   renderSignInButton($('google-signin-btn'));
 }
 
@@ -51,15 +52,18 @@ function initUserMenu() {
 // 登入成功（含之後重新登入）時呼叫 onLoggedIn(user)
 export async function startSession(onLoggedIn) {
   initUserMenu();
+  $('login-remember').addEventListener('change', e => setRememberLogin(e.target.checked));
 
   // 登出時一併清除本機的雲端資料快取（共用裝置時保護隱私）
   $('btn-sign-out').addEventListener('click', () => {
     signOut();
-    try {
-      Object.keys(localStorage)
-        .filter(k => k.startsWith('cartracker_cache_'))
-        .forEach(k => localStorage.removeItem(k));
-    } catch (e) { /* 忽略 */ }
+    [localStorage, sessionStorage].forEach(storage => {
+      try {
+        Object.keys(storage)
+          .filter(k => k.startsWith('cartracker_cache_'))
+          .forEach(k => storage.removeItem(k));
+      } catch (e) { /* 忽略 */ }
+    });
     location.reload();
   });
 

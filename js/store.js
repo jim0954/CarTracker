@@ -7,6 +7,7 @@ import { INITIAL_STATE } from './sample-data.js';
 import { showToast } from './utils.js';
 import { isCloudMode } from './config.js';
 import * as api from './api.js';
+import { isPersistentLogin } from './auth.js';
 
 const LOCAL_STORAGE_KEY = 'cartracker_db_v1';
 const LEGACY_STORAGE_KEY = 'autocare99_pro_db_v1';
@@ -17,6 +18,8 @@ export const SCHEMA_VERSION = 1;
 
 let appState = null;
 let storageKey = LOCAL_STORAGE_KEY;
+// 目前資料存放處：本機模式固定 localStorage；雲端模式依「在此裝置保持登入」，不保持時用 sessionStorage
+let dataStorage = localStorage;
 
 function emptyState() {
   return { schemaVersion: SCHEMA_VERSION, currentVehicleId: null, vehicles: [], maintenanceItems: [], records: [] };
@@ -34,7 +37,7 @@ function migrate(data) {
 
 function persist() {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(appState));
+    dataStorage.setItem(storageKey, JSON.stringify(appState));
   } catch (e) {
     console.error('Failed to save to localStorage', e);
     if (!isCloudMode) showToast('儲存失敗：本機儲存空間不足或已受限', 'error');
@@ -45,9 +48,9 @@ function newId(prefix) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 }
 
-function readStorage(key) {
+function readStorage(key, storage = localStorage) {
   try {
-    const json = localStorage.getItem(key);
+    const json = storage.getItem(key);
     return json ? migrate(JSON.parse(json)) : null;
   } catch (e) {
     console.warn('LocalStorage error', e);
@@ -99,14 +102,14 @@ let offlineNotified = false;
 function saveOutbox() {
   if (!outboxKey) return;
   try {
-    localStorage.setItem(outboxKey, JSON.stringify(outbox));
+    dataStorage.setItem(outboxKey, JSON.stringify(outbox));
   } catch (e) { /* 忽略 */ }
 }
 
 function loadOutbox(email) {
   outboxKey = `${CLOUD_CACHE_PREFIX}outbox_${email.toLowerCase()}`;
   try {
-    outbox = JSON.parse(localStorage.getItem(outboxKey) || '[]');
+    outbox = JSON.parse(dataStorage.getItem(outboxKey) || '[]');
   } catch (e) {
     outbox = [];
   }
@@ -206,14 +209,16 @@ export function load() {
     }
   } catch (e) { /* 忽略 */ }
   storageKey = LOCAL_STORAGE_KEY;
+  dataStorage = localStorage;
   appState = readStorage(LOCAL_STORAGE_KEY) || emptyState();
 }
 
 // 雲端模式：先用上次的快取立即顯示，回傳 true 表示有快取可用
 export function loadCloudCache(email) {
   storageKey = CLOUD_CACHE_PREFIX + email.toLowerCase();
+  dataStorage = isPersistentLogin() ? localStorage : sessionStorage;
   loadOutbox(email);
-  const cached = readStorage(storageKey);
+  const cached = readStorage(storageKey, dataStorage);
   appState = cached || emptyState();
   return !!cached;
 }

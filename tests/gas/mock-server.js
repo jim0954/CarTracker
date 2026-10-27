@@ -1,7 +1,7 @@
 // 本機模擬 GAS 後台：用 Node 執行 gas/*.js，供前端在沒有 Google 設定時做端對端測試。
 // 用法：node tests/gas/mock-server.js [port=5174] [延遲毫秒=300]
 // js/config.js 暫時設 GAS_URL = http://127.0.0.1:5174/exec、GOOGLE_CLIENT_ID = 000-test.apps.googleusercontent.com，
-// 並在 localStorage 放一個假的 cartracker_id_token（成員：test@gmail.com、kid@gmail.com）。
+// 並在 localStorage 放一個假的 cartracker_id_token（JWT 形狀，payload 需含 email、exp，以及 aud = 上面的 CLIENT_ID、iss = accounts.google.com；成員：test@gmail.com、kid@gmail.com）。
 // tokeninfo 為模擬：不驗證簽章，直接解出 JWT 內容。GET /debug 查看所有分頁資料，GET /fail 讓下一個請求失敗。
 const http = require('http');
 const path = require('path');

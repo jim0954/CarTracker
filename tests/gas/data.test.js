@@ -159,3 +159,17 @@ module.exports = { ctx };
   assert.ok(sheet.deleteCalls <= 2, `batched deletes (${sheet.deleteCalls} calls)`);
   console.log('batch delete tests passed');
 }
+
+// 文字欄以公式符號開頭時存成純文字，讀回時與原值相同
+{
+  const F = 'f@gmail.com';
+  const fv = G('svcSaveVehicle_')(F, { name: '=IMPORTXML("http://x")', plate: '+886-1', type: 'car', currentMileage: 0, notes: '-油封' }).vehicle;
+  const sheet = ctx._sheets.find(s => s.name === '車輛');
+  const raw = sheet.data.find(r => r.includes(fv.id));
+  assert.ok(raw.includes(`'=IMPORTXML("http://x")`) && raw.includes(`'+886-1`), 'escaped in sheet');
+  const back = G('svcBootstrap_')(F).vehicles[0];
+  assert.strictEqual(back.name, '=IMPORTXML("http://x")');
+  assert.strictEqual(back.plate, '+886-1');
+  assert.strictEqual(back.notes, '-油封');
+  console.log('formula escape tests passed');
+}

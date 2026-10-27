@@ -108,7 +108,8 @@ function toSheetValue_(col, value) {
     case 'datetime':
       return value instanceof Date ? value : new Date(value);
     default:
-      return String(value);
+      // 文字以 = + - @ 開頭時，試算表可能當成公式或數字（例如 =IMPORTXML、+886…）；補 ' 強制為純文字
+      return /^[=+\-@]/.test(String(value)) ? `'${value}` : String(value);
   }
 }
 
@@ -135,8 +136,10 @@ function fromSheetValue_(col, value) {
       return value instanceof Date ? formatDate_(value) : String(value);
     case 'datetime':
       return value instanceof Date ? value.toISOString() : String(value);
-    default:
-      return value === null ? '' : String(value);
+    default: {
+      const text = value === null ? '' : String(value);
+      return /^'[=+\-@]/.test(text) ? text.slice(1) : text;
+    }
   }
 }
 

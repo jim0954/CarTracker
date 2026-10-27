@@ -1,4 +1,4 @@
-// --- 每日排程：重新推算到期日、補齊日曆事件、寄送 Email 提醒與每月備份信 ---
+// --- 每日排程：重新推算到期日、補齊日曆事件、寄送 Email 提醒與每季備份信 ---
 // setup() 會安裝每天早上 8 點執行 dailyJob 的觸發器。
 // 每個項目的同一個到期日最多寄兩次：進入提前提醒天數時一次、到期當天（或已逾期）一次。
 // 寄送狀態記在「保養項目」的「已提醒」欄，格式為「到期日|early」或「到期日|due」。
@@ -11,9 +11,9 @@ function dailyJob() {
   syncAllCalendars_();
   sendReminders_();
   try {
-    sendMonthlyBackups_();
+    sendQuarterlyBackups_();
   } catch (err) {
-    console.error('每月備份信失敗', err);
+    console.error('每季備份信失敗', err);
   }
 }
 

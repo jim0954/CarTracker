@@ -6,7 +6,7 @@ const SETTING_DEFAULTS = [
   ['CLIENT_ID', '', 'Google 登入用的 OAuth 用戶端 ID（xxx.apps.googleusercontent.com）'],
   ['DEFAULT_REMIND_DAYS', '7', '新成員預設的提前提醒天數'],
   ['APP_URL', 'https://jim0954.github.io/CarTracker/', '網頁網址（顯示在日曆事件與提醒信中）'],
-  ['BACKUP_DAY', '1', '每月幾號寄出資料備份信給每位成員（1–28；0 代表不寄）']
+  ['BACKUP_DAY', '1', '每季（1、4、7、10 月）幾號寄出資料備份信給每位成員（1–28；0 代表不寄）']
 ];
 
 function setup() {

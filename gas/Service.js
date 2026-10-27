@@ -74,11 +74,23 @@ function recordFromClient_(rec) {
   };
 }
 
-// 保養項目明細：[{ name, spec, price }]
+// 保養項目明細：[{ name, spec, price, itemId? }]；itemId 為連結的保養項目
 function cleanParts_(parts) {
   return (Array.isArray(parts) ? parts : [])
-    .map(p => ({ name: String(p.name || '').trim(), spec: String(p.spec || '').trim(), price: Number(p.price) || 0 }))
+    .map(p => {
+      const part = { name: String(p.name || '').trim(), spec: String(p.spec || '').trim(), price: Number(p.price) || 0 };
+      if (p.itemId) part.itemId = String(p.itemId);
+      return part;
+    })
     .filter(p => p.name);
+}
+
+// 補登較舊的保養紀錄時，不覆蓋項目較新的「上次更換」
+function isNewerChange_(record, item) {
+  if (!item.lastDate) return true;
+  const recDate = String(record.date);
+  const itemDate = String(item.lastDate);
+  return recDate > itemDate || (recDate === itemDate && Number(record.mileage) >= Number(item.lastKm || 0));
 }
 
 function pick_(obj, keys) {
@@ -205,7 +217,7 @@ function svcSaveRecord_(email, data) {
     const items = readTable_('items');
     row.itemIds.forEach(itemId => {
       const itemRow = items.rows.find(r => r.id === itemId && r.owner === email && r.vehicleId === data.vehicleId);
-      if (!itemRow) return;
+      if (!itemRow || !isNewerChange_(row, itemRow)) return;
       updateRow_(items, itemRow._row, { lastKm: row.mileage, lastDate: row.date, updatedAt: now });
     });
 
@@ -250,6 +262,7 @@ function svcImportAll_(email, data, append) {
     const recordRows = (data.records || []).filter(r => vehicleIdMap[r.vehicleId]).map(r => {
       const flat = recordFromClient_(r);
       flat.itemIds = flat.itemIds.map(id => itemIdMap[id]).filter(Boolean);
+      flat.parts = flat.parts.map(({ itemId, ...p }) => (itemIdMap[itemId] ? { ...p, itemId: itemIdMap[itemId] } : p));
       return { ...flat, id: newId_('rec'), owner: email, vehicleId: vehicleIdMap[r.vehicleId], createdAt: now, updatedAt: now };
     });
 

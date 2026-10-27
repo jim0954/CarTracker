@@ -105,6 +105,14 @@ function initCloudMode() {
       .catch(handleCloudError);
   });
 
+  // 恢復網路時補送離線期間暫存的變更
+  window.addEventListener('online', () => {
+    if (!store.hasUnsentChanges()) return;
+    store.reloadFromCloud()
+      .then(() => showToast('離線時的變更已上傳'))
+      .catch(handleCloudError);
+  });
+
   // 還有資料尚未同步時，離開頁面前提醒
   window.addEventListener('beforeunload', (e) => {
     if (store.hasPendingSync()) e.preventDefault();

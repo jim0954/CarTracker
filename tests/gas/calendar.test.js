@@ -42,6 +42,15 @@ assert.strictEqual(cal.events.size, 1, 'recreated');
 ev = [...cal.events.values()][0];
 assert.strictEqual(itemRow().calendarEventId, ev.id);
 
+// event in trash: still returned but updates throw -> recreated instead of keeping a dead ID
+const dead = ev;
+dead.setTitle = () => { throw new Error('Event has been deleted'); };
+G('svcSaveItem_')(K, { id: it.id, notes: 'n2' });
+assert.notStrictEqual(itemRow().calendarEventId, dead.id, 'dead event replaced');
+cal.events.delete(dead.id);
+ev = [...cal.events.values()][0];
+assert.strictEqual(itemRow().calendarEventId, ev.id);
+
 // owner's own item: no invite
 const ov = G('svcSaveVehicle_')(O, { name: 'Car', plate: 'O-1', type: 'car', currentMileage: 10 }).vehicle;
 G('svcSaveItem_')(O, { vehicleId: ov.id, name: '機油', intervalKm: 5000, intervalMonths: 6, lastKm: 0, lastDate: '2026-10-01' });

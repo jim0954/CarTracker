@@ -28,6 +28,11 @@ assert.strictEqual(res.vehicle.currentMileage, 1200);
 assert.strictEqual(res.items[0].lastKm, 1200);
 assert.strictEqual(res.items[0].lastDate, '2026-10-01');
 assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(res.items[0].dueDate), 'dueDate computed: ' + res.items[0].dueDate);
+// 補登較舊的保養紀錄不會蓋掉較新的上次更換
+const backfill = G('svcSaveRecord_')(A, { vehicleId: v.id, date: '2026-03-01', mileage: 500, type: 'maintenance', title: '補登', amount: 0, vendor: '', notes: '', details: { itemIds: [item.id] } });
+assert.strictEqual(backfill.items[0].lastKm, 1200, 'backfill keeps newer lastKm');
+assert.strictEqual(backfill.items[0].lastDate, '2026-10-01');
+G('svcDeleteRecord_')(A, backfill.record.id);
 G('svcSaveRecord_')(A, { vehicleId: v.id, date: '2026-10-05', mileage: 1300, type: 'fuel', title: '加油', amount: 190, vendor: '', notes: '', details: { liters: 6, pricePerLiter: 31.5, isFullTank: true } });
 
 // B cannot see / edit A's data
@@ -48,6 +53,8 @@ assert.deepStrictEqual(JSON.parse(JSON.stringify(maint.details)), { itemIds: [it
 // 保養項目明細存成 JSON，空名稱的列會被略過
 G('svcSaveRecord_')(A, { ...maint, details: { itemIds: [item.id], parts: [{ name: '機油', spec: '10W40', price: '250' }, { name: ' ', price: 1 }] } });
 assert.deepStrictEqual(JSON.parse(JSON.stringify(G('svcBootstrap_')(A).records.find(r => r.id === maint.id).details.parts)), [{ name: '機油', spec: '10W40', price: 250 }]);
+G('svcSaveRecord_')(A, { ...maint, details: { itemIds: [item.id], parts: [{ name: '美孚機油', spec: '', price: 300, itemId: item.id }] } });
+assert.strictEqual(G('svcBootstrap_')(A).records.find(r => r.id === maint.id).details.parts[0].itemId, item.id, 'part keeps item link');
 
 // edit record
 G('svcSaveRecord_')(A, { ...maint, title: '換機油2' });
@@ -67,10 +74,15 @@ assert.strictEqual(G('svcBootstrap_')(B).vehicles.length, 1, 'B untouched');
 const local = {
   vehicles: [{ id: 'v1', name: 'L1', plate: 'P', type: 'moto', year: 2023, currentMileage: 100, initialMileage: 0, notes: '' }],
   maintenanceItems: [{ id: 'm1', vehicleId: 'v1', name: '機油', intervalKm: 1000, intervalMonths: 3, lastKm: 0, lastDate: '2026-01-01', notes: '' }],
-  records: [{ id: 'r1', vehicleId: 'v1', date: '2026-01-01', mileage: 0, type: 'maintenance', title: 't', amount: 1, vendor: '', notes: '', details: { itemIds: ['m1'] } }]
+  records: [{ id: 'r1', vehicleId: 'v1', date: '2026-01-01', mileage: 0, type: 'maintenance', title: 't', amount: 1, vendor: '', notes: '', details: { itemIds: ['m1'], parts: [{ name: '機油', spec: '', price: 1, itemId: 'm1' }] } }]
 };
 const imp = G('svcImportAll_')(A, local);
 assert.deepStrictEqual(JSON.parse(JSON.stringify(imp)), { vehicles: 1, maintenanceItems: 1, records: 1 });
+{
+  const b = G('svcBootstrap_')(A);
+  const rec = b.records.find(r => r.title === 't');
+  assert.strictEqual(rec.details.parts[0].itemId, b.maintenanceItems.find(i => i.name === '機油' && i.vehicleId === rec.vehicleId).id, 'part item link remapped on import');
+}
 const bootImp = G('svcBootstrap_')(A);
 assert.strictEqual(bootImp.records[0].details.itemIds[0], bootImp.maintenanceItems[0].id, 'itemIds remapped');
 assert.strictEqual(bootImp.records[0].vehicleId, bootImp.vehicles[0].id);
@@ -129,4 +141,21 @@ module.exports = { ctx };
   ctx2.__get('readTable_')('records');
   assert.notStrictEqual(sheet.data[0].indexOf('項目明細'), -1, 'header re-added');
   console.log('auto column tests passed');
+}
+
+// 覆蓋匯入大量資料時，連續的列合併成少數幾次刪除
+{
+  const E = 'e@gmail.com';
+  const many = {
+    vehicles: [{ id: 'v1', name: 'M', plate: 'M', type: 'moto', currentMileage: 0 }],
+    maintenanceItems: [],
+    records: Array.from({ length: 200 }, (_, i) => ({ id: 'r' + i, vehicleId: 'v1', date: '2026-01-01', mileage: i, type: 'other', title: 't' + i, amount: 1, details: {} }))
+  };
+  G('svcImportAll_')(E, many, false);
+  const sheet = ctx._sheets.find(s => s.name === '紀錄');
+  sheet.deleteCalls = 0;
+  G('svcImportAll_')(E, many, false);
+  assert.strictEqual(G('svcBootstrap_')(E).records.length, 200, 'replaced, not duplicated');
+  assert.ok(sheet.deleteCalls <= 2, `batched deletes (${sheet.deleteCalls} calls)`);
+  console.log('batch delete tests passed');
 }

@@ -168,7 +168,8 @@ export function convertIknow99(captures) {
       type,
       year,
       currentMileage: Math.max(0, ...forms.map(f => num(f.Odometer)), ...components.map(c => num(c.Odometer))),
-      initialMileage: 0,
+      // 中古車接手時里程不是 0：以最早一筆紀錄的里程為起始，每公里花費才準確
+      initialMileage: forms.length ? Math.min(...forms.map(f => num(f.Odometer))) : 0,
       notes: '從愛車99 匯入，請編輯車名與車牌'
     });
   });

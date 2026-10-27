@@ -21,8 +21,34 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+// --- 日期：一律用裝置的本地日期（toISOString 是 UTC，台灣 0~8 點會變成前一天）---
+const pad2 = n => String(n).padStart(2, '0');
+
+export function toDateStr(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
 export function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return toDateStr(new Date());
+}
+
+// 'YYYY-MM-DD' 解析為本地午夜（new Date('YYYY-MM-DD') 會被當成 UTC）
+export function parseDate(str) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(str || ''));
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+}
+
+// 加月數，月底不溢位（1/31 + 1 個月 = 2/28），與後台 addMonths_ 一致
+export function addMonths(date, months) {
+  const target = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(date.getDate(), lastDay));
+  return target;
+}
+
+// 兩個本地日期相差的天數
+export function daysBetween(from, to) {
+  return Math.round((to - from) / 86400000);
 }
 
 // --- Toast ---

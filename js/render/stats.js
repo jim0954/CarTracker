@@ -1,6 +1,7 @@
 // --- 分頁 4：費用統計圖表 ---
 import * as store from '../store.js';
 import { formatNumber } from '../utils.js';
+import { themeColor } from '../theme.js';
 
 let monthlyCostChartInstance = null;
 let categoryPieChartInstance = null;
@@ -75,20 +76,20 @@ export function renderStatsTab(vehicle) {
     data: {
       labels: months.map(m => m.replace('-', '/')),
       datasets: [
-        { label: '保養維修', data: monthlyMaint, backgroundColor: '#10b981', borderRadius: 4 },
-        { label: '加油燃料', data: monthlyFuel, backgroundColor: '#0284c7', borderRadius: 4 },
-        { label: '其他/稅費', data: monthlyOther, backgroundColor: '#8b5cf6', borderRadius: 4 }
+        { label: '保養維修', data: monthlyMaint, backgroundColor: themeColor('emerald-500'), borderRadius: 4 },
+        { label: '加油燃料', data: monthlyFuel, backgroundColor: themeColor('sky-600'), borderRadius: 4 },
+        { label: '其他/稅費', data: monthlyOther, backgroundColor: themeColor('violet-500'), borderRadius: 4 }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: { stacked: true, grid: { color: 'rgba(51, 65, 85, 0.4)' }, ticks: { color: '#94a3b8' } },
-        y: { stacked: true, grid: { color: 'rgba(51, 65, 85, 0.4)' }, ticks: { color: '#94a3b8' } }
+        x: { stacked: true, grid: { color: themeColor('slate-700', 0.4) }, ticks: { color: themeColor('slate-400') } },
+        y: { stacked: true, grid: { color: themeColor('slate-700', 0.4) }, ticks: { color: themeColor('slate-400') } }
       },
       plugins: {
-        legend: { labels: { color: '#cbd5e1', font: { size: 11 } } },
+        legend: { labels: { color: themeColor('slate-300'), font: { size: 11 } } },
         tooltip: {
           callbacks: {
             label: function(context) {
@@ -110,16 +111,16 @@ export function renderStatsTab(vehicle) {
       labels: ['保養維修', '加油燃料', '稅費保險', '改裝其他'],
       datasets: [{
         data: [maintCost, fuelCost, taxCost, otherCost],
-        backgroundColor: ['#10b981', '#0284c7', '#6366f1', '#f59e0b'],
+        backgroundColor: ['emerald-500', 'sky-600', 'indigo-500', 'amber-500'].map(c => themeColor(c)),
         borderWidth: 2,
-        borderColor: '#1e293b'
+        borderColor: themeColor('slate-800')
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } },
+        legend: { position: 'bottom', labels: { color: themeColor('slate-300'), font: { size: 11 } } },
         tooltip: {
           callbacks: {
             label: function(context) {

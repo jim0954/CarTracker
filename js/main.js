@@ -10,6 +10,7 @@ import { initVehicleActions } from './actions/vehicle.js';
 import { initRecordActions, editRecord, deleteRecord } from './actions/record.js';
 import { initItemActions, editMaintenanceItem, deleteMaintenanceItem, quickCompleteMaintenance, showItemHistory } from './actions/item.js';
 import { initBackupActions } from './actions/backup.js';
+import { initTheme, onThemeChange } from './theme.js';
 
 // 動態產生的卡片/表格按鈕以 data-action 委派處理
 const delegatedActions = {
@@ -34,6 +35,8 @@ initVehicleActions();
 initRecordActions();
 initItemActions();
 initBackupActions();
+initTheme();
+onThemeChange(() => renderApp());
 
 function handleCloudError(err) {
   if (AUTH_ERROR_CODES.includes(err.code)) showLogin(err.message);

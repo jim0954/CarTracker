@@ -11,7 +11,7 @@ const TYPE_STYLE = {
 };
 
 // 操作按鈕：跟保養頁、加油頁一樣等寬，圖示在上、文字在下
-const BTN = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white';
+const BTN = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-50';
 
 // 列表只顯示重點（店家或標題、日期里程、一行摘要），點一下展開完整備註與操作
 function recordRow(r) {
@@ -33,7 +33,7 @@ function recordRow(r) {
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline justify-between gap-3">
-          <span class="font-semibold text-white truncate">${escapeHtml(heading) || style.label}</span>
+          <span class="font-semibold text-slate-50 truncate">${escapeHtml(heading) || style.label}</span>
           <span class="shrink-0 font-mono font-bold text-slate-200 text-sm">NT$ ${formatNumber(r.amount)}</span>
         </div>
         <div class="text-xs text-slate-400 font-mono mt-0.5">${escapeHtml(formatDate(r.date))} · ${formatNumber(r.mileage)} km</div>

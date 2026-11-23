@@ -65,7 +65,7 @@ export function renderFuelTab(vehicle) {
   list.innerHTML = '';
   document.getElementById('fuel-empty-state').classList.toggle('hidden', fuelRecords.length > 0);
 
-  const btn = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white';
+  const btn = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-50';
   [...fuelRecords].reverse().forEach(r => {
     const d = r.details || {};
     const liters = Number(d.liters) || 0;
@@ -77,7 +77,7 @@ export function renderFuelTab(vehicle) {
       <summary class="list-none px-4 py-3 cursor-pointer hover:bg-slate-800/40 transition">
         <div class="flex items-center gap-2.5">
           <span class="w-2.5 h-2.5 shrink-0 rounded-full ${info.kmPerLiter ? 'bg-sky-500' : 'bg-slate-600'}"></span>
-          <span class="font-semibold text-white font-mono flex-1">${escapeHtml(formatDate(r.date))}</span>
+          <span class="font-semibold text-slate-50 font-mono flex-1">${escapeHtml(formatDate(r.date))}</span>
           <span class="shrink-0 text-xs font-bold ${info.kmPerLiter ? 'text-sky-400' : 'text-slate-500'}">${info.kmPerLiter ? `${info.kmPerLiter} km/L` : '—'}</span>
           <i class="record-chevron fa-solid fa-chevron-down text-[10px] text-slate-600 transition-transform"></i>
         </div>

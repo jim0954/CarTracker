@@ -19,6 +19,7 @@ export function renderApp() {
 
   // 1. 車輛下拉選單
   const select = document.getElementById('vehicle-select');
+  select.dataset.type = vehicle.type; // 明亮主題依車種顯示汽車或機車車牌樣式
   select.innerHTML = '';
   store.getVehicles().forEach(v => {
     const opt = document.createElement('option');
@@ -37,6 +38,9 @@ export function renderApp() {
     ? 'bg-emerald-500/15 text-emerald-400' : 'bg-sky-500/15 text-sky-400'}`;
 
   document.getElementById('hero-current-mileage').textContent = formatNumber(vehicle.currentMileage);
+  // 明亮主題的里程表字輪：補零到 6 位數（見 css/theme.css）
+  const digits = String(Math.max(0, Math.floor(Number(vehicle.currentMileage) || 0))).padStart(6, '0');
+  document.getElementById('hero-odometer').innerHTML = [...digits].map(d => `<span>${d}</span>`).join('');
   document.getElementById('current-mileage-label').textContent = formatNumber(vehicle.currentMileage);
 
   // 該車累計花費

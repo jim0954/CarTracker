@@ -2,13 +2,16 @@
 // 本站檔案：網路優先（確保拿到最新版），離線時改用快取
 // CDN 檔案（Tailwind、FontAwesome、Chart.js）：先用快取，背景更新
 // Google 登入與 Apps Script 請求不經過快取
-const CACHE = 'cartracker-v6';
+const CACHE = 'cartracker-v7';
 
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './css/theme.css',
   './css/app.css',
+  './assets/fonts/barlow-condensed-latin-600-normal.woff2',
+  './assets/fonts/barlow-condensed-latin-700-normal.woff2',
   './assets/icons/icon-192.png',
   './js/tailwind.config.js',
   './js/main.js',
@@ -30,7 +33,8 @@ const APP_SHELL = [
   './js/actions/item.js',
   './js/actions/backup.js',
   './js/iknow99.js',
-  './js/parts.js'
+  './js/parts.js',
+  './js/theme.js'
 ];
 
 const CDN_HOSTS = ['cdn.tailwindcss.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];

@@ -94,7 +94,7 @@ function itemRow(vehicle, item, info, historyCount) {
   const calUrl = calendarUrl(vehicle, item, info.nextDate, info.nextMileage);
   // 操作按鈕等寬排成一列，圖示在上、文字在下
   const btn = 'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] whitespace-nowrap transition';
-  const grey = 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white';
+  const grey = 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-50';
 
   const row = document.createElement('details');
   row.className = 'record-row';
@@ -102,7 +102,7 @@ function itemRow(vehicle, item, info, historyCount) {
     <summary class="list-none px-4 py-3 cursor-pointer hover:bg-slate-800/40 transition">
       <div class="flex items-center gap-2.5">
         <span class="w-2.5 h-2.5 shrink-0 rounded-full ${style.dot}"></span>
-        <span class="font-semibold text-white truncate flex-1">${escapeHtml(item.name)}</span>
+        <span class="font-semibold text-slate-50 truncate flex-1">${escapeHtml(item.name)}</span>
         <span class="shrink-0 text-xs font-bold ${style.text}">${escapeHtml(info.remainText)}</span>
         <i class="record-chevron fa-solid fa-chevron-down text-[10px] text-slate-600 transition-transform"></i>
       </div>

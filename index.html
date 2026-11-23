@@ -6,6 +6,10 @@
   <title>CarTracker - 汽機車保養紀錄</title>
   <meta name="description" content="記錄汽機車保養、加油與花費，保養到期自動提醒">
   <meta name="theme-color" content="#0f172a">
+  <script>
+    // 先套用介面主題，避免畫面先閃一下另一套顏色（見 js/theme.js）
+    try { if (localStorage.getItem('cartracker_theme') === 'garage') document.documentElement.dataset.theme = 'garage'; } catch (e) {}
+  </script>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -20,6 +24,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
   <script src="js/tailwind.config.js"></script>
+  <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
@@ -28,12 +33,12 @@
   <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- Confirmation Modal -->
-  <div id="confirm-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
+  <div id="confirm-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] hidden flex p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl m-auto">
       <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-4" id="confirm-modal-icon">
         <i class="fa-solid fa-triangle-exclamation"></i>
       </div>
-      <h3 class="text-lg font-bold text-white mb-2" id="confirm-modal-title">確認操作</h3>
+      <h3 class="text-lg font-bold text-slate-50 mb-2" id="confirm-modal-title">確認操作</h3>
       <p class="text-slate-400 text-sm mb-6 whitespace-pre-line" id="confirm-modal-message">您確定要執行這項操作嗎？</p>
       <div class="flex gap-3 justify-end">
         <button id="confirm-modal-cancel" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition">取消</button>
@@ -68,18 +73,18 @@
         </div>
 
         <!-- Add Vehicle Button -->
-        <button id="btn-open-vehicle-modal" title="管理車輛 / 新增車輛" class="w-9 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition">
+        <button id="btn-open-vehicle-modal" title="管理車輛 / 新增車輛" class="w-9 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-slate-300 hover:text-slate-50 transition">
           <i class="fa-solid fa-car"></i>
         </button>
 
         <!-- Settings / Backup Menu -->
-        <button id="btn-open-backup-modal" title="資料備份與匯出" class="w-9 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition">
+        <button id="btn-open-backup-modal" title="資料備份與匯出" class="w-9 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-slate-300 hover:text-slate-50 transition">
           <i class="fa-solid fa-cloud-arrow-down"></i>
         </button>
 
         <!-- 登入者（雲端模式） -->
         <div id="user-chip" class="hidden relative flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-3 border-l border-slate-700 shrink-0">
-          <button id="btn-sync" title="重新整理" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition">
+          <button id="btn-sync" title="重新整理" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-50 transition">
             <i id="sync-icon" class="fa-solid fa-rotate"></i>
           </button>
           <button id="btn-user-menu" title="帳號" class="flex items-center gap-2 rounded-full hover:ring-2 hover:ring-slate-600 transition">
@@ -89,10 +94,13 @@
           </button>
           <div id="user-menu" class="hidden absolute right-0 top-11 w-60 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2 z-40">
             <div class="px-3 py-2 border-b border-slate-700 mb-1">
-              <p id="user-menu-name" class="text-sm font-bold text-white truncate"></p>
+              <p id="user-menu-name" class="text-sm font-bold text-slate-50 truncate"></p>
               <p id="user-menu-email" class="text-xs text-slate-400 truncate"></p>
             </div>
-            <button id="btn-sign-out" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">
+            <button id="btn-theme" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-700 hover:text-slate-50 transition">
+              <i class="fa-solid fa-circle-half-stroke w-4"></i> <span id="btn-theme-label">改用明亮介面</span>
+            </button>
+            <button id="btn-sign-out" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-700 hover:text-slate-50 transition">
               <i class="fa-solid fa-right-from-bracket w-4"></i> 登出
             </button>
           </div>
@@ -107,7 +115,7 @@
       <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/20 mb-5">
         <i class="fa-solid fa-gauge-high"></i>
       </div>
-      <h1 class="text-2xl font-black text-white">CarTracker</h1>
+      <h1 class="text-2xl font-black text-slate-50">CarTracker</h1>
       <p class="text-sm text-slate-400 mt-2">使用 Google 帳號登入，管理你的車輛保養紀錄</p>
       <div id="google-signin-btn" class="mt-8 flex justify-center min-h-[44px]"></div>
       <label class="mt-4 inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none">
@@ -134,7 +142,7 @@
       <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/20 mb-5">
         <i class="fa-solid fa-car-side"></i>
       </div>
-      <h1 class="text-2xl font-black text-white">歡迎使用 CarTracker</h1>
+      <h1 class="text-2xl font-black text-slate-50">歡迎使用 CarTracker</h1>
       <p class="text-sm text-slate-400 mt-2">先新增你的第一台車，就可以開始記錄保養、加油與花費。</p>
       <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
         <button id="btn-welcome-add-vehicle" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2">
@@ -153,10 +161,10 @@
       <span id="vehicle-badge-type" class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm bg-emerald-500/15 text-emerald-400">
         <i class="fa-solid fa-motorcycle"></i>
       </span>
-      <div class="flex-1 grid grid-cols-3 divide-x divide-slate-800 text-center text-sm whitespace-nowrap">
-        <button id="btn-quick-mileage" type="button" title="更新里程" class="hover:bg-slate-800/60 rounded-lg transition"><span id="hero-current-mileage" class="font-mono font-bold text-emerald-400">0</span><span class="text-[11px] text-slate-400 ml-0.5">km</span><i class="fa-solid fa-pen text-[9px] text-slate-500 ml-1"></i></button>
-        <div><span id="hero-alert-count" class="font-mono font-bold text-amber-400">0</span><span class="text-[11px] text-slate-400 ml-0.5">項待保養</span></div>
-        <div><span class="text-[11px] text-slate-400 mr-0.5">NT$</span><span id="hero-total-cost" class="font-mono font-bold text-white">0</span></div>
+      <div class="hero-grid flex-1 grid grid-cols-3 divide-x divide-slate-800 text-center text-sm whitespace-nowrap">
+        <button id="btn-quick-mileage" type="button" title="更新里程" class="hover:bg-slate-800/60 rounded-lg transition"><span id="hero-current-mileage" class="odo-text font-mono font-bold text-emerald-400">0</span><span id="hero-odometer" class="odo-cells" aria-hidden="true"></span><span class="text-[11px] text-slate-400 ml-0.5">km</span><i class="fa-solid fa-pen text-[9px] text-slate-500 ml-1"></i></button>
+        <div class="hero-stat"><span id="hero-alert-count" class="font-mono font-bold text-amber-400">0</span><span class="text-[11px] text-slate-400 ml-0.5">項待保養</span></div>
+        <div class="hero-stat"><span class="text-[11px] text-slate-400 mr-0.5">NT$</span><span id="hero-total-cost" class="font-mono font-bold text-slate-50">0</span></div>
       </div>
     </div>
   </section>
@@ -200,7 +208,7 @@
       <!-- Section Header & Filter/Action -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <h2 class="text-xl font-bold text-slate-50 flex items-center gap-2">
             <span>耗材與保養項目狀態</span>
             <span class="text-xs font-normal text-slate-400">依目前里程自動推算</span>
           </h2>
@@ -230,7 +238,7 @@
     <div id="tab-content-records" class="tab-pane hidden flex flex-col gap-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="text-xl font-bold text-white">用車歷程與保養流水帳</h2>
+          <h2 class="text-xl font-bold text-slate-50">用車歷程與保養流水帳</h2>
           <p class="text-xs text-slate-400 mt-0.5">所有加油、保養、改裝、保險與規費記錄一應俱全</p>
         </div>
 
@@ -267,7 +275,7 @@
     <!-- TAB 3: Fuel & Efficiency (加油與油耗) -->
     <div id="tab-content-fuel" class="tab-pane hidden flex flex-col gap-4">
       <div class="flex items-center justify-between gap-4">
-        <h2 class="text-xl font-bold text-white">加油與油耗</h2>
+        <h2 class="text-xl font-bold text-slate-50">加油與油耗</h2>
         <button id="btn-quick-fuel" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition">
           <i class="fa-solid fa-plus"></i> 加油
         </button>
@@ -284,11 +292,11 @@
           <div class="text-[11px] text-slate-400">元/km</div>
         </div>
         <div class="py-3 px-1">
-          <div id="fuel-stat-total-liters" class="text-lg font-black font-mono text-white">0.0</div>
+          <div id="fuel-stat-total-liters" class="text-lg font-black font-mono text-slate-50">0.0</div>
           <div class="text-[11px] text-slate-400">累計公升</div>
         </div>
         <div class="py-3 px-1">
-          <div id="fuel-stat-total-cost" class="text-lg font-black font-mono text-white">0</div>
+          <div id="fuel-stat-total-cost" class="text-lg font-black font-mono text-slate-50">0</div>
           <div class="text-[11px] text-slate-400">累計 NT$</div>
         </div>
       </div>
@@ -304,7 +312,7 @@
     <!-- TAB 4: Cost Analytics & Charts (費用分析與統計) -->
     <div id="tab-content-stats" class="tab-pane hidden flex flex-col gap-6">
       <div>
-        <h2 class="text-xl font-bold text-white">養車費用深度分析</h2>
+        <h2 class="text-xl font-bold text-slate-50">養車費用深度分析</h2>
         <p class="text-xs text-slate-400 mt-0.5">全方位掌握每月開銷、各項保養與支出結構</p>
       </div>
 
@@ -372,10 +380,10 @@
   <div id="modal-mileage" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <h3 class="text-lg font-bold text-slate-50 flex items-center gap-2">
           <i class="fa-solid fa-gauge-simple text-emerald-400"></i> 更新目前里程
         </h3>
-        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close text-slate-400 hover:text-slate-50"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="form-mileage" class="flex flex-col gap-4">
         <div>
@@ -398,10 +406,10 @@
   <div id="modal-record" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
-        <h3 id="record-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+        <h3 id="record-modal-title" class="text-lg font-bold text-slate-50 flex items-center gap-2">
           <i class="fa-solid fa-pen-nib text-emerald-400"></i> 新增用車紀錄
         </h3>
-        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close text-slate-400 hover:text-slate-50"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <form id="form-record" class="flex flex-col gap-4">
@@ -514,10 +522,10 @@
   <div id="modal-item-history" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <h3 class="text-lg font-bold text-slate-50 flex items-center gap-2">
           <i class="fa-solid fa-clock-rotate-left text-emerald-400"></i> <span id="item-history-title">更換歷史</span>
         </h3>
-        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close text-slate-400 hover:text-slate-50"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <p id="item-history-summary" class="text-xs text-slate-400 mb-2"></p>
       <ul id="item-history-list" class="divide-y divide-slate-700/80 text-sm"></ul>
@@ -528,10 +536,10 @@
   <div id="modal-item" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
-        <h3 id="item-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+        <h3 id="item-modal-title" class="text-lg font-bold text-slate-50 flex items-center gap-2">
           <i class="fa-solid fa-screwdriver text-emerald-400"></i> 設定保養項目
         </h3>
-        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close text-slate-400 hover:text-slate-50"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <form id="form-item" class="flex flex-col gap-4">
@@ -581,14 +589,14 @@
   <div id="modal-vehicle" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
-        <h3 id="vehicle-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+        <h3 id="vehicle-modal-title" class="text-lg font-bold text-slate-50 flex items-center gap-2">
           <i class="fa-solid fa-car-side text-emerald-400"></i> 新增 / 編輯車輛
         </h3>
         <div class="flex items-center gap-3">
           <button type="button" id="btn-vehicle-new" class="hidden px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-emerald-400 text-xs font-semibold transition">
             <i class="fa-solid fa-plus mr-1"></i>新增另一台車
           </button>
-          <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+          <button class="modal-close text-slate-400 hover:text-slate-50"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
 
@@ -647,10 +655,10 @@
   <div id="modal-backup" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl m-auto">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <h3 class="text-lg font-bold text-slate-50 flex items-center gap-2">
           <i class="fa-solid fa-database text-sky-400"></i> 資料備份與匯出
         </h3>
-        <button class="modal-close text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close text-slate-400 hover:text-slate-50"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <p id="backup-desc" class="text-xs text-slate-400 mb-4">
@@ -665,7 +673,7 @@
               <i class="fa-solid fa-file-code"></i>
             </div>
             <div class="text-left">
-              <span class="font-bold text-white block">匯出 JSON 備份檔</span>
+              <span class="font-bold text-slate-50 block">匯出 JSON 備份檔</span>
               <span class="text-xs text-slate-400">包含所有車輛、項目與完整紀錄</span>
             </div>
           </div>
@@ -679,7 +687,7 @@
               <i class="fa-solid fa-file-csv"></i>
             </div>
             <div class="text-left">
-              <span class="font-bold text-white block">匯出 Excel / CSV 表格</span>
+              <span class="font-bold text-slate-50 block">匯出 Excel / CSV 表格</span>
               <span class="text-xs text-slate-400">適合在試算表中開啟與分析</span>
             </div>
           </div>
@@ -693,7 +701,7 @@
               <i class="fa-solid fa-envelope"></i>
             </div>
             <div class="text-left">
-              <span class="font-bold text-white block">寄一份備份到我的信箱</span>
+              <span class="font-bold text-slate-50 block">寄一份備份到我的信箱</span>
               <span class="text-xs text-slate-400">備份檔以附件寄到登入的 Gmail，可用「匯入」還原</span>
             </div>
           </div>
@@ -709,7 +717,7 @@
                 <i class="fa-solid fa-file-import"></i>
               </div>
               <div class="text-left">
-                <span class="font-bold text-white block">匯入 JSON 備份檔</span>
+                <span class="font-bold text-slate-50 block">匯入 JSON 備份檔</span>
                 <span id="import-desc" class="text-xs text-slate-400">將備份檔還原至目前瀏覽器</span>
               </div>
             </div>
@@ -726,7 +734,7 @@
                 <i class="fa-solid fa-truck-arrow-right"></i>
               </div>
               <div class="text-left">
-                <span class="font-bold text-white block">從愛車99 匯入</span>
+                <span class="font-bold text-slate-50 block">從愛車99 匯入</span>
                 <span class="text-xs text-slate-400">讀取 iknow99_export.json，加入車輛、保養項目與紀錄（不覆蓋現有資料）</span>
               </div>
             </div>

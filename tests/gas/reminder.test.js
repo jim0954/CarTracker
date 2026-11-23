@@ -15,17 +15,14 @@ const plus = d => fmt(new Date(today.getTime() + d * 86400000));
 
 const v = G('svcSaveVehicle_')(K, { name: 'Moto<script>', plate: 'K-1', type: 'moto', currentMileage: 0 }).vehicle;
 // month-based due dates relative to today (no mileage rate): lastDate chosen so due = today + N
-const mk = (name, dueOffset) => {
-  const it = G('svcSaveItem_')(K, { vehicleId: v.id, name, intervalKm: 0, intervalMonths: 1, lastKm: 0, lastDate: plus(dueOffset - 30) }).item;
-  // force exact due date for the test
-  const items = G('readTable_')('items');
-  G('updateRow_')(items, items.rows.find(r => r.id === it.id)._row, { dueDate: plus(dueOffset) });
-  return it;
-};
-mk('soon', 3);
-mk('overdue', -2);
-mk('far', 30);
-mk('today', 0);
+// 每次儲存項目都會重算同車其他項目的到期日（上次日期 + 1 個月，不一定是 30 天），
+// 所以全部建立完才強制寫入測試要的到期日
+const offsets = { soon: 3, overdue: -2, far: 30, today: 0 };
+Object.entries(offsets).forEach(([name, dueOffset]) => {
+  G('svcSaveItem_')(K, { vehicleId: v.id, name, intervalKm: 0, intervalMonths: 1, lastKm: 0, lastDate: plus(dueOffset - 30) });
+});
+const created = G('readTable_')('items');
+created.rows.forEach(r => G('updateRow_')(created, r._row, { dueDate: plus(offsets[r.name]) }));
 
 G('sendReminders_')();
 assert.strictEqual(ctx._mail.length, 1, 'one email for kid');
